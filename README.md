@@ -4,6 +4,13 @@ Levantamento da rede credenciada da **Paraná Clínicas** para os três planos c
 consultado em **12/09/2026** na busca oficial de rede credenciada da operadora
 (<https://www.paranaclinicas.com.br/beneficiario/rede-credenciada/>).
 
+### 👉 [Consultar a rede](https://dallalbacorretor-a11y.github.io/estudo-rede-parana-clinicas/)
+
+Página interativa, no mesmo padrão da [rede Amil](https://dallalbacorretor-a11y.github.io/rede-amil/):
+visão geral com mapa e gráficos, comparação entre dois planos, rede completa com busca
+por prestador/CNPJ e filtros por cidade, categoria, especialidade e bairro, além de
+exportação em CSV e **geração de PDF** assinado pelo corretor.
+
 > **A rede credenciada é definida e alterada exclusivamente pela operadora.**
 > Este material tem caráter informativo e reflete a consulta feita na data acima.
 > **Confirme sempre no portal da Paraná Clínicas antes de contratar.**
@@ -37,6 +44,8 @@ Paraná 400 AHO QC (ANS 507886265) e Paraná 600 AHO QP (ANS 507889260) não for
 ## Conteúdo
 
 ```
+index.html                                    a página de consulta publicada acima
+
 01 - REDE CREDENCIADA/Paraná Clínicas/
     REDE PARANA 400 AHO QP COPART SR.xlsx    rede do plano (abas Rede + Resumo)
     REDE PARANA 600 AHO QC COPART SR.xlsx
