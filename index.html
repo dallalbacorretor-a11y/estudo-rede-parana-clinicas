@@ -2078,6 +2078,8 @@ window.CORRETOR={"nome": "Alan Vinicius Dall Alba", "corretora": "Mazza Broker",
     return (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase();
   };
   var COR = { "Paraná Clínicas": "var(--marca-texto)" };
+  var VAR_PLANO = { p400: "var(--plano-a)", p600: "var(--plano-b)",
+                    cim: "var(--plano-c)" };
   /* Cada campo guarda um CONJUNTO de escolhas. Dentro do campo vale "ou"
      (cardiologia OU dermatologia); entre campos vale "e" (cardiologia E no
      Batel). Vazio quer dizer "tudo". */
@@ -2522,7 +2524,8 @@ window.CORRETOR={"nome": "Alan Vinicius Dall Alba", "corretora": "Mazza Broker",
         b.className = "ficha";
         b.setAttribute("aria-pressed", "false");
         // cor propria do plano; sem ela, a cor da linha
-        b.style.setProperty("--cor", p.cor || COR[p.linha] || "var(--plano-a)");
+        b.style.setProperty("--cor", VAR_PLANO[p.codigo] || p.cor ||
+                                COR[p.linha] || "var(--plano-a)");
         b.innerHTML =
           '<span class="nome-plano"><span class="marca">✓</span>' +
           esc(rotuloProduto(p)) + "</span>" +
@@ -2747,7 +2750,8 @@ window.CORRETOR={"nome": "Alan Vinicius Dall Alba", "corretora": "Mazza Broker",
       cols.forEach(function (c) {
         var tem = meus.indexOf(c.codigo) >= 0;
         h += '<td class="prod' + (tem ? " tem" : "") +
-             '" style="--cor:' + (COR[c.linha] || "var(--plano-a)") + '">' +
+             '" style="--cor:' + (VAR_PLANO[c.codigo] || COR[c.linha] ||
+                                        "var(--plano-a)") + '">' +
              (tem ? "&#10003;" : "") + "</td>";
       });
       h += "</tr>";
@@ -3083,7 +3087,7 @@ window.CORRETOR={"nome": "Alan Vinicius Dall Alba", "corretora": "Mazza Broker",
     var maior = Math.max.apply(null, dados.map(function (d) { return d.v; }));
     $(alvo).innerHTML = dados.map(function (d) {
       var larg = maior ? Math.max(2, 100 * d.v / maior) : 0;
-      var cor = COR_GRAFICO[d.linha] || "var(--marca-texto)";
+      var cor = VAR_PLANO[d.cod] || COR_GRAFICO[d.linha] || "var(--marca-texto)";
       return '<div class="barra" title="' + esc(d.rot) + ": " + d.v + " " +
              esc(sufixo) + '">' +
              '<span class="rot">' + esc(d.rot) + "</span>" +
@@ -3139,18 +3143,18 @@ window.CORRETOR={"nome": "Alan Vinicius Dall Alba", "corretora": "Mazza Broker",
       quem.forEach(function (p) {
         ((p.cr && p.cr.length) ? p.cr : p.cid).forEach(function (c) { onde[c] = 1; });
       });
-      return { rot: rotuloProduto(pr), linha: pr.linha,
+      return { rot: rotuloProduto(pr), linha: pr.linha, cod: pr.codigo,
                n: quem.length, cid: Object.keys(onde).length };
     });
 
     barras("grPrestadores", porProduto.slice()
       .sort(function (a, b) { return b.n - a.n; })
-      .map(function (d) { return { rot: d.rot, linha: d.linha, v: d.n }; }),
+      .map(function (d) { return { rot: d.rot, linha: d.linha, cod: d.cod, v: d.n }; }),
       "prestadores");
 
     barras("grCidades", porProduto.slice()
       .sort(function (a, b) { return b.cid - a.cid; })
-      .map(function (d) { return { rot: d.rot, linha: d.linha, v: d.cid }; }),
+      .map(function (d) { return { rot: d.rot, linha: d.linha, cod: d.cod, v: d.cid }; }),
       "cidades");
 
     var linhas = {};
@@ -3366,7 +3370,7 @@ window.CORRETOR={"nome": "Alan Vinicius Dall Alba", "corretora": "Mazza Broker",
       produto: nA + "  para  " + nB,
       semCidadeNaCapa: false,
       cidade: onde,
-      cor: aux.COR_LINHA[prodA ? prodA.linha : "PME/PJ"] || "#20456f",
+      cor: (prodA && prodA.cor) || "#8e0e28",
       corretor: corretor,
       mapa: cidadesComRede(r.noA),
       semCidade: false
@@ -3602,7 +3606,7 @@ window.CORRETOR={"nome": "Alan Vinicius Dall Alba", "corretora": "Mazza Broker",
       comparativo: comparativo,
       listaProdutos: nomes,
       cidade: rotuloCidade,
-      cor: aux.COR_LINHA[produto.linha] || "#20456f",
+      cor: produto.cor || aux.COR_LINHA[produto.linha] || "#8e0e28",
       corretor: corretor
     });
     rel.carregarFontes();
