@@ -10,7 +10,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _local  # noqa: F401  (fixa o diretorio de trabalho)
 
 SAI = os.path.join(_local.RAIZ, "index.html")
-HOJE = "12/09/2026"
+HOJE = "12/09/2026"          # data da coleta da rede
+import datetime
+VERSAO = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
 
 L = lambda f: io.open(f, encoding="utf-8").read()
 head = L(os.path.join(_local.BASE, "amil_head.html"))     # CSS + markup (ate antes dos <script>)
@@ -104,9 +106,18 @@ head = troca(head,
              'estão dentro do 400 e do 600.</p>')
 
 head = head.replace("portal da Amil", "portal da Paraná Clínicas")
+# Carimbo da versão publicada. O GitHub Pages serve a página com dez minutos de
+# cache, e uma aba já aberta fica na versão antiga até recarregar - sem isto,
+# nao da para saber se o que esta na tela e a ultima publicacao.
+head = troca(head, '<span class="assina" id="assinaRodape"></span>',
+             '<span class="assina" id="assinaRodape"></span>\n'
+             '  <span class="versao" title="Se esta data estiver atrasada, '
+             'recarregue a página segurando Shift">versão ' + VERSAO + '</span>')
 # a contagem de medicos do corpo clinico abre a lista no title
 head = troca(head, "</style>",
-             ".equipe{cursor:help;border-bottom:1px dotted currentColor}\n</style>")
+             ".equipe{cursor:help;border-bottom:1px dotted currentColor}\n"
+             ".rodape .versao{display:block;margin-top:4px;font-size:10.5px;"
+             "opacity:.55;font-variant-numeric:tabular-nums}\n</style>")
 head = troca(head, "A comparação usa a praça filtrada na aba Rede completa.",
              "A comparação usa a cidade filtrada na aba Rede completa.")
 
