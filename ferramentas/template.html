@@ -1,0 +1,76 @@
+<!doctype html><html lang="pt-br"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Comparativo de Rede · Paraná Clínicas</title>
+<style>
+:root{--navy:#10233f;--gold:#c9a227;--ink:#1c2230;--mut:#6b7686;--line:#e3e7ee;--bg:#f6f7f9}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,Segoe UI,Roboto,Arial,sans-serif}
+header{background:var(--navy);color:#fff;padding:26px 28px 22px}
+header h1{margin:0;font-family:Georgia,'Times New Roman',serif;font-size:26px;font-weight:600;letter-spacing:.2px}
+header h2{margin:2px 0 0;font-family:Georgia,serif;font-style:italic;font-weight:400;font-size:19px;color:var(--gold)}
+header p{margin:12px 0 0;font-size:12.5px;color:#c3ccda;max-width:760px}
+.bars{display:flex;height:5px;margin-top:16px;border-radius:3px;overflow:hidden;max-width:420px}
+.bars i{flex:1}
+.brand{float:right;font-family:Georgia,serif;color:var(--gold);font-size:15px;letter-spacing:1px}
+.wrap{padding:18px 28px 60px}
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+input,select{font:13px inherit;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink)}
+input{flex:1;min-width:220px}
+.count{font-size:12.5px;color:var(--mut)}
+.tblbox{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:auto;max-height:74vh}
+table{border-collapse:separate;border-spacing:0;width:100%;min-width:900px}
+th{position:sticky;top:0;z-index:2;background:var(--navy);color:#fff;font-size:11.5px;font-weight:600;
+   text-transform:uppercase;letter-spacing:.6px;padding:11px 10px;text-align:left;white-space:nowrap}
+th.pl{text-align:center;width:86px}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;font-size:13px}
+td.chk{text-align:center;font-size:16px;font-weight:700}
+.esp{display:block;color:var(--mut);font-size:11.5px;margin-top:2px}
+.nm{min-width:250px}.end{min-width:230px}.tel{white-space:nowrap;font-variant-numeric:tabular-nums}
+tr.cat td{background:#eef1f6;font-weight:700;font-size:11.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--navy)}
+tbody tr:hover td{background:#fbfcfe}
+footer{margin-top:18px;font-size:11.5px;color:var(--mut);line-height:1.6}
+.aviso{background:#fff8e1;border:1px solid #f0dfa8;border-left:4px solid var(--gold);
+       padding:11px 14px;border-radius:8px;font-size:12.5px;margin-bottom:14px}
+@media(prefers-color-scheme:dark){
+ :root{--ink:#e8ecf3;--mut:#98a3b4;--line:#2a3342;--bg:#121722}
+ body{background:var(--bg)} .tblbox,input,select{background:#1a2130}
+ tbody tr:hover td{background:#202839} tr.cat td{background:#1f2736;color:#cfd8e6}
+ .aviso{background:#241f10;border-color:#4a3f1c}}
+</style></head><body>
+<header>
+ <span class="brand">MAZZA BROKER</span>
+ <h1>Comparativo de Rede Credenciada</h1>
+ <h2>Paraná Clínicas · Curitiba e Região Metropolitana</h2>
+ <p>Rede dos planos <b>Paraná 400 AHO QP</b>, <b>Paraná 600 AHO QC</b> e <b>Paraná CIM AHO QC</b> (COPART SR).
+    Consulta realizada em {{DATA}} na busca oficial de rede credenciada da operadora.</p>
+ <div class="bars"><i style="background:#a80a32"></i><i style="background:#1f6b4e"></i><i style="background:#2a2abf"></i></div>
+</header>
+<div class="wrap">
+ <div class="aviso"><b>Importante:</b> a rede credenciada é definida e alterada exclusivamente pela operadora.
+  Confirme no portal da Paraná Clínicas antes de contratar.</div>
+ <div class="tools">
+  <input id="q" placeholder="Buscar prestador, especialidade, bairro ou cidade...">
+  <select id="fcat"><option value="">Todas as categorias</option>{{CATS}}</select>
+  <select id="fcid"><option value="">Todas as cidades</option>{{CIDS}}</select>
+  <span class="count" id="cnt">{{TOTAL}} registros</span>
+ </div>
+ <div class="tblbox"><table>
+  <thead><tr><th>Prestador / especialidades</th><th>Cidade / bairro</th><th>Endereço</th><th>Telefone</th>{{THS}}</tr></thead>
+  <tbody id="tb">{{LINHAS}}</tbody>
+ </table></div>
+ <footer>Mazza Broker · Rede credenciada Paraná Clínicas — Curitiba &amp; Região · Alan Vinicius Dall Alba ·
+  (41) 99547-6715 · alan.vinicius@mazzabroker.com.br<br>
+  ✔ = prestador atende o plano · · = não consta na lista do plano.</footer>
+</div>
+<script>
+const tb=document.getElementById('tb'),q=document.getElementById('q'),
+      fc=document.getElementById('fcat'),fd=document.getElementById('fcid'),cnt=document.getElementById('cnt');
+const rows=[...tb.rows];
+function filtra(){const t=q.value.toLowerCase().trim(),c=fc.value,d=fd.value;let n=0;
+ for(const r of rows){const ok=(!t||r.dataset.txt.includes(t))&&(!c||r.dataset.cat===c)&&(!d||r.dataset.cid===d);
+  r.hidden=!ok; if(ok)n++;}
+ cnt.textContent=n+' registro'+(n===1?'':'s');}
+[q,fc,fd].forEach(e=>e.addEventListener('input',filtra));
+try{const s=localStorage.getItem('pc_filtros');if(s){const o=JSON.parse(s);q.value=o.q||'';fc.value=o.c||'';fd.value=o.d||'';filtra();}}catch(e){}
+[q,fc,fd].forEach(e=>e.addEventListener('input',()=>{try{localStorage.setItem('pc_filtros',JSON.stringify({q:q.value,c:fc.value,d:fd.value}))}catch(e){}}));
+</script></body></html>

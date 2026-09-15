@@ -1,0 +1,1236 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rede Amil Paraná, Santa Catarina e São Paulo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,500;0,600;1,500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+/* ---- paleta clara (completa; o modo escuro só redefine estes tokens) ---- */
+:root{
+  --papel:#f2f5f9;
+  --carta:#ffffff;
+  --tinta:#101828;
+  --tinta-fraca:#5b6577;
+  --risco:#dbe2ec;
+  --realce:#f6f8fc;
+
+  --marca-fundo:#0d2a4f;     /* navy Mazza, superfícies */
+  --sobre-marca:#ffffff;     /* texto sobre o navy */
+  --banda:#25507f;           /* faixa de categoria dentro da tabela */
+  --sobre-banda:#ffffff;
+  --marca-texto:#0d2a4f;     /* navy como cor de texto */
+
+  --ouro:#8a6810;
+  --sobre-ouro:#ffffff;
+
+  --amil:#2733c4;            /* linha PME/PJ */
+  --adesao:#7c2f6d;          /* linha Adesão */
+  --amils:#0b6154;           /* linha Amil S */
+  --sobre-cor:#ffffff;       /* texto sobre as cores de linha */
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --papel:#0a0f17;
+    --carta:#131a25;
+    --tinta:#e7ecf4;
+    --tinta-fraca:#94a0b4;
+    --risco:#25303f;
+    --realce:#19212e;
+
+    --marca-fundo:#0b1a2f;
+    --sobre-marca:#dbe7f7;
+    --banda:#1c3a5e;
+    --sobre-banda:#dbe7f7;
+    --marca-texto:#9dbfec;
+
+    --ouro:#d6b155;
+    --sobre-ouro:#0a0f17;
+
+    --amil:#8d99ff;
+    --adesao:#e08fd0;
+    --amils:#48c7b4;
+    --sobre-cor:#0a0f17;
+  }
+}
+:root[data-theme="dark"]{
+  --papel:#0a0f17;
+  --carta:#131a25;
+  --tinta:#e7ecf4;
+  --tinta-fraca:#94a0b4;
+  --risco:#25303f;
+  --realce:#19212e;
+
+  --marca-fundo:#0b1a2f;
+  --sobre-marca:#dbe7f7;
+  --banda:#1c3a5e;
+  --sobre-banda:#dbe7f7;
+  --marca-texto:#9dbfec;
+
+  --ouro:#d6b155;
+  --sobre-ouro:#0a0f17;
+
+  --amil:#8d99ff;
+  --adesao:#e08fd0;
+  --amils:#48c7b4;
+  --sobre-cor:#0a0f17;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--papel);
+  color:var(--tinta);
+  font-family:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif;
+  font-size:14px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+:focus-visible{outline:2px solid var(--amil);outline-offset:2px;border-radius:3px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ------------------------------------------------------------- cabeçalho */
+.topo{
+  background:
+    radial-gradient(120% 180% at 88% -40%, rgba(214,177,85,.16), transparent 60%),
+    var(--marca-fundo);
+  color:var(--sobre-marca);
+  padding:22px 28px 18px;
+  display:flex;
+  align-items:baseline;
+  gap:20px;
+  flex-wrap:wrap;
+  border-bottom:3px solid var(--ouro);
+}
+.topo h1{
+  margin:0;
+  font-family:Spectral,Georgia,serif;
+  font-weight:600;
+  font-size:27px;
+  letter-spacing:-.015em;
+  text-wrap:balance;
+}
+#tituloEstado{white-space:nowrap}
+.topo h1 em{font-style:italic;font-weight:500;color:var(--ouro)}
+.topo .data{font-family:"IBM Plex Mono",monospace;font-size:12px;opacity:.72}
+/* Recorte da varredura: aparece so no estado que nao esta inteiro, e aparece
+   perto do nome dele - longe do titulo, viraria nota de rodape que ninguem le. */
+.topo .recorte{
+  font-size:11.5px;
+  line-height:1.35;
+  padding:3px 9px;
+  border-radius:4px;
+  color:#f1d79a;
+  background:rgba(196,150,44,.2);
+  border:1px solid rgba(196,150,44,.42);
+}
+/* Troca de estado: a página carrega os dois de uma vez e só troca o
+   conjunto ativo - nada de recarregar nem de link diferente por estado. */
+/* Estes botoes ficam SEMPRE sobre o navy do cabecalho, entao as cores sao
+   fixas - usar --tinta aqui deixava "Santa Catarina" invisivel no modo claro. */
+.estados{display:flex;gap:0;padding:3px;border-radius:999px;
+         background:rgba(255,255,255,.09)}
+.estados[hidden]{display:none}
+.estados button{
+  font:inherit;
+  font-size:12px;
+  font-weight:500;
+  letter-spacing:.05em;
+  padding:6px 15px;
+  border:0;
+  border-radius:999px;
+  background:transparent;
+  color:rgba(255,255,255,.72);
+  cursor:pointer;
+  transition:background .15s,color .15s;
+}
+.estados button:hover{background:rgba(255,255,255,.10);color:#fff;filter:none}
+.estados button.ativo{
+  background:#d6b155;
+  color:#16233a;
+  font-weight:600;
+}
+.estados button.ativo:hover{background:#e0bf6c;color:#16233a}
+.topo .selo{
+  margin-left:auto;
+  font-family:Spectral,Georgia,serif;
+  font-size:13px;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:#d6b155;                       /* ouro claro: o fundo aqui e sempre navy */
+}
+
+/* ------------------------------------------------------- abas e panorama */
+.abas{
+  display:flex;
+  gap:2px;
+  padding:0 28px;
+  background:var(--carta);
+  border-bottom:1px solid var(--risco);
+}
+.aba{
+  font:inherit;
+  font-size:12.5px;
+  font-weight:600;
+  letter-spacing:.04em;
+  padding:13px 18px 11px;
+  border:0;
+  border-bottom:2px solid transparent;
+  border-radius:0;
+  background:transparent;
+  color:var(--tinta-fraca);
+  cursor:pointer;
+}
+.aba:hover{color:var(--tinta);filter:none;background:var(--realce)}
+.aba.ativa{color:var(--marca-texto);border-bottom-color:var(--ouro)}
+
+.panorama{padding:0 0 8px}
+.panorama[hidden],.rede[hidden]{display:none}
+
+.pan-topo{padding:26px 28px 20px;background:var(--carta);
+          border-bottom:1px solid var(--risco)}
+.pan-numeros{display:flex;flex-wrap:wrap;gap:0 44px}
+.pan-numeros .n{padding:2px 0}
+.pan-numeros .n b{
+  display:block;
+  font-family:Spectral,Georgia,serif;
+  font-size:44px;
+  font-weight:600;
+  line-height:1;
+  letter-spacing:-.03em;
+  font-variant-numeric:tabular-nums;
+  color:var(--marca-texto);
+}
+.pan-numeros .n span{
+  display:block;
+  margin-top:5px;
+  font-size:10px;
+  font-weight:500;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--tinta-fraca);
+}
+.pan-nota{margin:16px 0 0;max-width:62ch;font-size:12.5px;color:var(--tinta-fraca)}
+
+.pan-cabeca h2,.gr figcaption h2{
+  margin:0;
+  font-family:Spectral,Georgia,serif;
+  font-size:19px;
+  font-weight:600;
+  letter-spacing:-.01em;
+  color:var(--tinta);
+}
+.pan-cabeca p,.gr figcaption p{
+  margin:5px 0 0;max-width:60ch;font-size:12.5px;color:var(--tinta-fraca);
+}
+
+.pan-mapa{padding:24px 28px 8px}
+.mapa-caixa{position:relative;margin-top:14px}
+.mapa{display:block;width:100%;height:auto;overflow:visible}
+.mapa .cidade{cursor:pointer;transition:opacity .12s}
+.mapa-caixa:hover .cidade{opacity:.5}
+.mapa-caixa .cidade:hover{opacity:1}
+.mapa-dica{
+  position:absolute;
+  z-index:5;
+  pointer-events:none;
+  padding:8px 11px;
+  border-radius:7px;
+  background:var(--marca-fundo);
+  color:var(--sobre-marca);
+  font-size:12px;
+  line-height:1.45;
+  box-shadow:0 8px 22px rgba(16,24,40,.28);
+  white-space:nowrap;
+}
+.mapa-dica[hidden]{display:none}
+.mapa-dica b{font-size:12.5px}
+.mapa-dica i{font-style:normal;opacity:.72}
+.mapa-legenda{
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+  margin-top:10px;font-size:11px;color:var(--tinta-fraca);
+}
+.mapa-legenda .amostra{display:flex;align-items:center;gap:7px}
+
+.pan-graficos{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(330px,1fr));
+  gap:28px;
+  padding:22px 28px 6px;
+}
+.gr{margin:0}
+.gr-corpo{margin-top:14px;display:flex;flex-direction:column;gap:7px}
+.barra{display:grid;grid-template-columns:118px 1fr auto;align-items:center;gap:10px}
+.barra .rot{
+  font-size:11.5px;color:var(--tinta-fraca);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.barra .trilho{
+  display:block;
+  height:12px;background:var(--realce);border-radius:2px;overflow:hidden;
+}
+.barra .preenche{
+  display:block;                 /* span inline ignora altura: a barra sumia */
+  height:12px;border-radius:0 4px 4px 0;
+  transition:width .35s cubic-bezier(.2,.7,.3,1);
+}
+.barra .val{
+  font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums;
+  color:var(--tinta);min-width:34px;text-align:right;
+}
+.barra:hover .rot,.barra:hover .val{color:var(--marca-texto)}
+
+.pan-legenda-linhas{
+  display:flex;gap:20px;flex-wrap:wrap;
+  padding:12px 28px 20px;font-size:11.5px;color:var(--tinta-fraca);
+}
+.pan-legenda-linhas .item{display:flex;align-items:center;gap:7px}
+.pan-legenda-linhas .marca{width:11px;height:11px;border-radius:3px}
+
+@media (max-width:640px){
+  .pan-numeros{gap:0 26px}
+  .pan-numeros .n b{font-size:32px}
+  .abas{padding:0 14px}
+  .pan-topo,.pan-mapa,.pan-graficos,.pan-legenda-linhas{padding-left:16px;padding-right:16px}
+}
+
+/* ----------------------------------------------------- entre dois planos */
+.entre[hidden]{display:none}
+.entre-topo{padding:24px 28px 20px;background:var(--carta);
+            border-bottom:1px solid var(--risco)}
+.entre-cabeca h2{
+  margin:0;font-family:Spectral,Georgia,serif;font-size:21px;font-weight:600;
+  letter-spacing:-.01em;color:var(--tinta);
+}
+.entre-cabeca p{margin:5px 0 0;max-width:66ch;font-size:12.5px;
+                color:var(--tinta-fraca)}
+.entre-escolha{
+  display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin-top:16px;
+}
+.entre-escolha label{align-self:center}
+.entre-escolha select{width:auto;min-width:190px}
+.seta-entre{font-size:17px;color:var(--tinta-fraca);padding-bottom:7px}
+
+.entre-corpo{padding:22px 28px 30px}
+.perde-numeros{display:flex;flex-wrap:wrap;gap:0 40px;margin-bottom:8px}
+.perde-numeros .n b{
+  display:block;font-family:Spectral,Georgia,serif;font-size:38px;
+  font-weight:600;line-height:1;letter-spacing:-.03em;
+  font-variant-numeric:tabular-nums;
+}
+.perde-numeros .n span{
+  display:block;margin-top:4px;font-size:10px;font-weight:500;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--tinta-fraca);
+}
+.perde-numeros .n.ruim b{color:#a8341a}
+.perde-numeros .n.igual b{color:var(--marca-texto)}
+
+.bloco-perde{margin-top:26px}
+.bloco-perde h3{
+  margin:0 0 4px;font-family:Spectral,Georgia,serif;font-size:17px;
+  font-weight:600;color:var(--tinta);
+}
+.bloco-perde p.sub{margin:0 0 12px;font-size:12.5px;color:var(--tinta-fraca);
+                   max-width:66ch}
+.lista-perde{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+             gap:8px}
+.cartao-perde{
+  border:1px solid var(--risco);border-left:3px solid #a8341a;
+  border-radius:7px;padding:9px 12px;background:var(--carta);
+}
+.cartao-perde .nome{font-weight:600;font-size:13px;color:var(--tinta)}
+.cartao-perde .onde{font-size:11.5px;color:var(--tinta-fraca);margin-top:2px}
+.cartao-perde.fica{border-left-color:#0f7a52}
+.fichas-cidade{display:flex;flex-wrap:wrap;gap:6px}
+.ficha-cidade{
+  font-size:12px;padding:4px 11px;border-radius:999px;
+  border:1px solid var(--risco);background:var(--carta);color:var(--tinta-fraca);
+}
+.ficha-cidade.some{border-color:#a8341a;color:#a8341a;font-weight:600}
+.nada-perde{font-size:13px;color:var(--tinta-fraca);padding:10px 0}
+.quase-igual{
+  margin:0 0 18px;
+  padding:13px 16px;
+  border-left:3px solid #0f7a52;
+  border-radius:0 7px 7px 0;
+  background:var(--realce);
+  font-size:13px;
+  line-height:1.55;
+  max-width:78ch;
+}
+.quase-igual b{color:#0f7a52}
+.barra-igual{
+  display:block;height:8px;border-radius:4px;background:var(--risco);
+  overflow:hidden;margin:12px 0 4px;max-width:420px;
+}
+.barra-igual i{display:block;height:8px;background:#0f7a52}
+
+@media (max-width:640px){
+  .entre-topo,.entre-corpo{padding-left:16px;padding-right:16px}
+  .perde-numeros .n b{font-size:30px}
+}
+
+/* --------------------------------------------------------------- filtros */
+.painel{background:var(--carta);border-bottom:1px solid var(--risco);padding:18px 28px 16px}
+.linha-campos{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(168px,1fr));
+  gap:12px 14px;
+  align-items:end;
+}
+.campo{display:flex;flex-direction:column;gap:5px;min-width:0}
+label,.rotulo{
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.13em;
+  text-transform:uppercase;
+  color:var(--tinta-fraca);
+}
+input,select{
+  width:100%;
+  min-width:0;
+  font:inherit;
+  font-size:13.5px;
+  padding:9px 11px;
+  color:var(--tinta);
+  background:var(--carta);
+  border:1px solid var(--risco);
+  border-radius:7px;
+  transition:border-color .15s,box-shadow .15s;
+}
+input:hover,select:hover{border-color:var(--tinta-fraca)}
+input:focus{border-color:var(--amil);box-shadow:0 0 0 3px rgba(39,51,196,.10);outline:none}
+input::placeholder{color:var(--tinta-fraca);opacity:.85}
+.botoes{display:flex;gap:8px}
+button{
+  font:inherit;
+  font-size:13px;
+  font-weight:600;
+  white-space:nowrap;
+  cursor:pointer;
+  padding:9px 16px;
+  border-radius:7px;
+  border:1px solid var(--marca-fundo);
+  background:var(--marca-fundo);
+  color:var(--sobre-marca);
+  transition:filter .15s,border-color .15s;
+}
+button.vazado{background:transparent;color:var(--marca-texto);border-color:var(--risco)}
+button.vazado:hover{border-color:var(--marca-texto);filter:none}
+button:hover{filter:brightness(1.18)}
+
+/* --------------------------------------------------- seletor de múltiplos */
+.seletor{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  width:100%;
+  font:inherit;
+  font-size:13.5px;
+  font-weight:400;
+  text-align:left;
+  padding:9px 11px;
+  border-radius:7px;
+  border:1px solid var(--risco);
+  background:var(--carta);
+  color:var(--tinta);
+  cursor:pointer;
+}
+.seletor:hover{border-color:var(--marca-texto);filter:none}
+.seletor.tem{
+  border-color:var(--amil);
+  color:var(--marca-texto);
+  font-weight:600;
+  box-shadow:0 0 0 3px rgba(39,51,196,.09);
+}
+.seletor .seta{font-size:9px;opacity:.55;flex:none}
+.seletor .resumo{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.lista-flutuante{
+  /* fixo na janela, nunca no documento: assim o rodapé com os botões fica
+     sempre dentro da tela, mesmo em celular */
+  position:fixed;
+  z-index:40;
+  width:290px;
+  max-width:calc(100vw - 24px);
+  max-height:calc(100vh - 20px);
+  background:var(--carta);
+  border:1px solid var(--risco);
+  border-radius:8px;
+  box-shadow:0 12px 32px rgba(16,24,40,.18);
+  padding:10px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+/* o display:flex acima vence a regra do navegador para [hidden]; sem isto o
+   painel nunca some, e o botão Fechar parece não funcionar */
+.lista-flutuante[hidden]{display:none}
+.lista-flutuante input{font-size:13px}
+.topo-lista{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  font-size:10.5px;
+  font-weight:600;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--tinta-fraca);
+}
+.topo-lista button{
+  all:unset;
+  cursor:pointer;
+  width:22px;
+  height:22px;
+  line-height:20px;
+  text-align:center;
+  border-radius:5px;
+  font-size:17px;
+  color:var(--tinta-fraca);
+}
+.topo-lista button:hover{background:var(--realce);color:var(--tinta)}
+.opcao.vazia{opacity:.45}
+.opcoes{flex:1 1 auto;min-height:60px;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
+.opcao{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 7px;
+  border-radius:4px;
+  cursor:pointer;
+  font-size:13px;
+  line-height:1.3;
+}
+.opcao:hover{background:var(--realce)}
+.opcao input{width:14px;height:14px;flex:none;margin:0;accent-color:var(--amil)}
+.opcao .qtd{margin-left:auto;font-size:11px;color:var(--tinta-fraca);flex:none}
+.pe-lista{display:flex;gap:8px;justify-content:space-between;
+  align-items:center;flex:none}
+/* no celular vira uma folha presa embaixo, largura inteira */
+@media (max-width:640px){
+  .lista-flutuante{
+    left:0!important;
+    right:0;
+    top:auto!important;
+    bottom:0;
+    width:100%;
+    max-width:100%;
+    max-height:78vh;
+    border-radius:12px 12px 0 0;
+    box-shadow:0 -8px 32px rgba(16,24,40,.28);
+  }
+}
+.pe-lista .conta{font-size:11.5px;color:var(--tinta-fraca)}
+.pe-lista button{font-size:12px;padding:6px 11px}
+
+.escolhidos{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  padding:0 24px 13px;
+  background:var(--carta);
+}
+.escolhidos:empty{display:none}
+.marca-filtro{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  font-size:12px;
+  padding:4px 6px 4px 11px;
+  border-radius:13px;
+  background:var(--realce);
+  border:1px solid var(--risco);
+  color:var(--tinta);
+}
+.marca-filtro b{font-weight:600;color:var(--tinta-fraca);font-size:10px;
+  text-transform:uppercase;letter-spacing:.06em}
+.marca-filtro button{
+  all:unset;
+  cursor:pointer;
+  width:15px;
+  height:15px;
+  line-height:14px;
+  text-align:center;
+  border-radius:50%;
+  color:var(--tinta-fraca);
+  font-size:13px;
+}
+.marca-filtro button:hover{background:var(--marca-fundo);color:var(--sobre-marca)}
+
+/* -------------------------------------------------------------- produtos */
+.produtos{background:var(--carta);border-bottom:1px solid var(--risco);padding:14px 24px 16px}
+.cabec-produtos{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:11px}
+.alternador{display:inline-flex;border:1px solid var(--risco);border-radius:5px;overflow:hidden}
+.alternador span{
+  padding:5px 12px;
+  font-size:12px;
+  cursor:pointer;
+  color:var(--tinta-fraca);
+  border-right:1px solid var(--risco);
+}
+.alternador span:last-child{border-right:0}
+.alternador span.ativo{background:var(--marca-fundo);color:var(--sobre-marca);font-weight:600}
+.assinatura{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  margin-left:auto;
+  font-size:11.5px;
+  font-weight:500;
+  padding:5px 11px;
+  border-radius:7px;
+}
+.assinatura .etiq{
+  font-size:9.5px;
+  letter-spacing:.11em;
+  text-transform:uppercase;
+  color:var(--tinta-fraca);
+}
+.assinatura #quemAssina{font-weight:600;color:var(--marca-texto)}
+
+.painel-corretor{
+  position:fixed;
+  inset:0;
+  z-index:60;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:rgba(13,42,79,.42);
+}
+.painel-corretor[hidden]{display:none}
+.pc-caixa{
+  width:min(520px,100%);
+  max-height:calc(100vh - 40px);
+  overflow:auto;
+  background:var(--carta);
+  border:1px solid var(--risco);
+  border-radius:12px;
+  box-shadow:0 20px 50px rgba(16,24,40,.3);
+  padding:20px 22px 18px;
+}
+.pc-topo{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.pc-topo h2{
+  margin:0;font-family:Spectral,Georgia,serif;font-size:20px;font-weight:600;
+  color:var(--tinta);
+}
+.pc-topo .x{
+  font-size:20px;line-height:1;padding:2px 9px;border-radius:6px;
+  background:transparent;border:1px solid var(--risco);color:var(--tinta-fraca);
+}
+.pc-nota{margin:8px 0 16px;font-size:12.5px;line-height:1.55;
+         color:var(--tinta-fraca)}
+/* Campo que se le mas nao se edita: a marca do material e fixa. */
+.fixo{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:13.5px;
+  font-weight:600;
+  padding:9px 11px;
+  border-radius:7px;
+  border:1px dashed var(--risco);
+  background:var(--realce);
+  color:var(--marca-texto);
+}
+.fixo::after{
+  content:"fixo";
+  margin-left:auto;
+  font-size:9.5px;
+  font-weight:500;
+  letter-spacing:.11em;
+  text-transform:uppercase;
+  color:var(--tinta-fraca);
+}
+.pc-nota b{color:var(--tinta)}
+.pc-campos{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+.pc-acoes{display:flex;gap:9px;margin-top:18px}
+@media (max-width:520px){.pc-campos{grid-template-columns:1fr}}
+
+.instrucao{
+  font-size:12.5px;
+  color:var(--tinta-fraca);
+}
+.instrucao b{color:var(--marca-texto)}
+.limpar-sel{
+  font-size:11.5px;
+  padding:4px 10px;
+  border-radius:6px;
+}
+.limpar-sel[hidden]{display:none}
+.rotulo.passo{
+  font-size:12px;
+  letter-spacing:.1em;
+  color:var(--marca-texto);
+}
+.rotulo.passo::before{
+  content:"1";
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:17px;height:17px;
+  margin-right:7px;
+  border-radius:50%;
+  background:var(--marca-fundo);
+  color:var(--sobre-marca);
+  font-size:10px;
+  vertical-align:-3px;
+}
+/* enquanto nao ha produto marcado, o botao de PDF avisa que depende disso */
+#pdf.esperando{
+  background:transparent;
+  color:var(--tinta-fraca);
+  border-color:var(--risco);
+  border-style:dashed;
+}
+#pdf.esperando:hover{border-color:var(--marca-texto);color:var(--marca-texto)}
+
+.nota-familia{
+  margin:14px 0 0;
+  padding:9px 13px;
+  border-left:3px solid var(--ouro);
+  border-radius:0 6px 6px 0;
+  background:var(--realce);
+  font-size:12px;
+  line-height:1.55;
+  color:var(--tinta-fraca);
+  max-width:96ch;
+}
+.nota-familia b{color:var(--tinta)}
+.grupos{display:flex;gap:34px;flex-wrap:wrap;margin-top:4px}
+.grupo{display:flex;flex-direction:column;gap:10px}
+.grupo .rotulo{display:flex;align-items:center;gap:7px}
+.grupo .rotulo::before{content:"";width:14px;height:3px;border-radius:2px;background:var(--cor)}
+.fichas{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch}
+/* O produto e o que destrava o PDF; era a fileira mais apagada da tela.
+   Cada plano usa a cor do proprio nome - bronze, aco, ouro - como memoria
+   visual. A cor e decorativa: o rotulo ao lado sempre diz qual e o plano. */
+.ficha{
+  --viva:var(--cor);
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:1px;
+  min-width:158px;
+  font:inherit;
+  text-align:left;
+  padding:11px 15px 12px 17px;
+  border-radius:11px;
+  cursor:pointer;
+  background:var(--carta);
+  border:1.5px solid var(--risco);
+  color:var(--tinta);
+  overflow:hidden;
+  transition:border-color .14s,background .14s,box-shadow .14s,transform .1s;
+}
+.ficha::before{                    /* faixa da cor do plano, na lateral */
+  content:"";
+  position:absolute;
+  left:0; top:0; bottom:0;
+  width:5px;
+  background:var(--viva);
+}
+.ficha .nome-plano{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:15px;
+  font-weight:600;
+  letter-spacing:-.005em;
+  white-space:nowrap;
+}
+/* A caixa de marcacao aparece VAZIA antes do clique: e o que diz "isto se
+   marca" e "da para marcar mais de um". Sem ela o cartao lia como painel. */
+.ficha .marca{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:19px;height:19px;
+  flex:none;
+  border-radius:6px;
+  border:1.5px solid var(--risco);
+  background:var(--carta);
+  color:transparent;
+  font-size:12px;
+  font-weight:700;
+  line-height:1;
+  transition:background .14s,border-color .14s,color .14s;
+}
+.ficha:hover .marca{border-color:var(--viva)}
+.ficha.ativa .marca{
+  background:var(--viva);
+  border-color:var(--viva);
+  color:var(--sobre-cor);
+}
+.ficha .qtd{
+  font-family:Spectral,Georgia,serif;
+  font-size:23px;
+  font-weight:600;
+  line-height:1.1;
+  letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;
+  color:var(--viva);
+}
+.ficha .qtd small{
+  font-family:"IBM Plex Sans",sans-serif;
+  font-size:10px;
+  font-weight:500;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--tinta-fraca);
+  margin-left:5px;
+}
+.ficha .detalhe{
+  font-size:11px;
+  color:var(--tinta-fraca);
+  white-space:nowrap;
+}
+.ficha .medida{
+  display:block;
+  width:100%;
+  height:4px;
+  margin-top:7px;
+  border-radius:2px;
+  background:var(--risco);
+  overflow:hidden;
+}
+.ficha .medida i{
+  display:block;
+  height:4px;
+  background:var(--viva);
+  transition:width .4s cubic-bezier(.2,.7,.3,1);
+}
+.ficha{box-shadow:0 1px 2px rgba(16,24,40,.06)}
+.ficha:hover{
+  border-color:var(--viva);
+  background:var(--realce);
+  box-shadow:0 4px 12px rgba(16,24,40,.13);
+  transform:translateY(-1px);
+  filter:none;
+}
+.ficha:active{transform:translateY(0)}
+.ficha.ativa{
+  border-color:var(--viva);
+  border-width:1.5px;
+  background:color-mix(in srgb, var(--viva) 11%, var(--carta));
+  box-shadow:0 3px 12px rgba(16,24,40,.16);
+}
+.ficha.ativa::before{width:7px}
+.ficha.ativa .nome-plano{color:var(--viva)}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .ficha{
+    --viva:color-mix(in srgb, var(--cor) 58%, white);
+  }
+}
+:root[data-theme="dark"] .ficha{
+  --viva:color-mix(in srgb, var(--cor) 58%, white);
+}
+
+/* ---------------------------------------------------------------- resumo */
+/* A faixa de numeros e a primeira coisa que o cliente le. Numeros em serifa
+   (a mesma do titulo e dos PDFs) para parecer material, nao planilha. */
+.resumo{
+  display:flex;
+  flex-wrap:wrap;
+  gap:0 6px;
+  padding:2px 28px 0;
+  background:var(--carta);
+  border-bottom:1px solid var(--risco);
+  box-shadow:inset 0 1px 0 var(--risco);
+}
+.metrica{
+  position:relative;
+  padding:15px 26px 14px 0;
+  margin-right:26px;
+}
+.metrica::after{
+  content:"";
+  position:absolute;
+  right:0; top:50%;
+  width:1px; height:26px;
+  transform:translateY(-50%);
+  background:var(--risco);
+}
+.metrica:last-child{border-right:0;margin-right:0;padding-right:0}
+.metrica:last-child::after{display:none}
+.metrica b{
+  display:block;
+  font-family:Spectral,Georgia,serif;
+  font-size:26px;
+  font-weight:600;
+  line-height:1.05;
+  letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;
+  color:var(--marca-texto);
+}
+.metrica span{
+  display:block;
+  margin-top:3px;
+  font-size:10px;
+  font-weight:500;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:var(--tinta-fraca);
+}
+
+/* ---------------------------------------------------------------- tabela */
+.grade{overflow-x:auto;background:var(--carta)}
+tbody tr:hover td{background:var(--realce);}
+tbody tr:hover td.fixa{background:var(--realce)}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
+th,td{padding:11px 12px;text-align:left;vertical-align:top}
+thead th{
+  position:sticky;
+  top:0;
+  z-index:3;
+  background:var(--marca-fundo);
+  color:var(--sobre-marca);
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.11em;
+  text-transform:uppercase;
+  white-space:nowrap;
+  padding-top:12px;
+  padding-bottom:11px;
+  box-shadow:inset 0 -2px 0 rgba(214,177,85,.55);
+}
+thead th.prod{text-align:center;padding:9px 7px;border-left:1px solid var(--risco)}
+thead th.prod i{display:block;font-style:normal;font-size:9px;font-weight:400;opacity:.72}
+th.fixa,td.fixa{
+  position:sticky;
+  left:0;
+  z-index:2;
+  min-width:252px;
+  max-width:340px;
+  border-right:1px solid var(--risco);
+  background:var(--carta);
+}
+thead th.fixa{z-index:4;background:var(--marca-fundo)}
+tbody td{border-bottom:1px solid var(--risco);background:var(--carta)}
+tbody tr:nth-child(even) td{background:var(--realce)}
+tr.faixa td{
+  background:var(--banda);
+  color:var(--sobre-banda);
+  font-size:10.5px;
+  font-weight:600;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  padding:8px 12px;
+}
+tr.faixa:hover td{background:var(--banda)}
+.nome{font-weight:600;line-height:1.3;font-size:13.5px;letter-spacing:-.005em}
+.miudo{font-size:11px;color:var(--tinta-fraca);margin-top:2px}
+.cnpj{font-family:"IBM Plex Mono",monospace;font-size:10.5px}
+.especs{font-size:11px;color:var(--tinta-fraca);margin-top:3px}
+.especs .interna{
+  display:inline-block;
+  margin-left:6px;
+  padding:0 5px;
+  border-radius:3px;
+  font-size:10px;
+  font-weight:600;
+  white-space:nowrap;
+  color:#8a5a00;
+  background:rgba(196,150,44,.16);
+}
+:root:not([data-theme="light"]) .especs .interna{
+  color:#e5c169;background:rgba(196,150,44,.18);
+}
+:root[data-theme="dark"] .especs .interna{
+  color:#e5c169;background:rgba(196,150,44,.18);
+}
+td.prod{
+  text-align:center;
+  font-size:15px;
+  font-weight:600;
+  color:var(--cor);
+  border-left:1px solid var(--risco);
+}
+/* vela de cor bem leve onde o prestador atende, igual as colunas dos PDFs:
+   o olho acha a coluna cheia sem precisar ler cada linha */
+td.prod.tem{
+  background-image:linear-gradient(color-mix(in srgb,var(--cor) 7%,transparent),
+                                   color-mix(in srgb,var(--cor) 7%,transparent));
+}
+tbody tr:hover td.prod.tem{
+  background-image:linear-gradient(color-mix(in srgb,var(--cor) 12%,transparent),
+                                   color-mix(in srgb,var(--cor) 12%,transparent));
+}
+.km{
+  display:inline-block;
+  margin-left:6px;
+  padding:1px 6px;
+  border-radius:9px;
+  font-size:10.5px;
+  font-weight:600;
+  font-variant-numeric:tabular-nums;
+  background:var(--realce);
+  border:1px solid var(--risco);
+  color:var(--marca-texto);
+}
+/* Hospital listado num filtro de exame: ele faz, mas nao para eletivo. */
+.so-ps{
+  display:inline-block;
+  margin-left:6px;
+  padding:1px 6px;
+  border-radius:3px;
+  vertical-align:2px;
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:.06em;
+  background:#8a2f10;
+  color:#fff;
+}
+tr.faixa.alerta td{background:#8a2f10;letter-spacing:.08em}
+tr.faixa.alerta:hover td{background:#8a2f10}
+
+.marca-selo{
+  display:inline-block;
+  margin-left:5px;
+  padding:1px 5px;
+  border-radius:3px;
+  vertical-align:2px;
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:.05em;
+  background:var(--ouro);
+  color:var(--sobre-ouro);
+}
+
+.aviso-download{
+  margin:0;
+  padding:11px 28px;
+  font-size:12.5px;
+  background:var(--realce);
+  border-bottom:1px solid var(--risco);
+  color:var(--tinta);
+}
+.aviso-download[hidden]{display:none}
+.aviso-download b{color:var(--marca-texto)}
+tr.mais td{
+  background:var(--realce);
+  text-align:center;
+  padding:14px 10px;
+  position:sticky;
+  left:0;
+}
+tr.mais button{font-size:12.5px;padding:7px 16px}
+tr.mais span{color:var(--tinta-fraca);font-size:12px;margin-right:12px}
+.nada{padding:60px 24px;text-align:center;color:var(--tinta-fraca)}
+.rodape{
+  display:flex;
+  gap:16px;
+  flex-wrap:wrap;
+  align-items:baseline;
+  padding:18px 24px 34px;
+  font-size:11.5px;
+  color:var(--tinta-fraca);
+}
+.rodape .aviso{border-left:3px solid var(--ouro);padding-left:11px;max-width:62ch}
+.rodape .assina{margin-left:auto;font-family:Spectral,Georgia,serif;color:var(--ouro)}
+
+@media (max-width:640px){
+  .topo{padding:14px 16px}
+  .topo h1{font-size:19px}
+  .painel,.produtos,.resumo,.rodape{padding-left:16px;padding-right:16px}
+  th.fixa,td.fixa{min-width:186px}
+}
+</style>
+
+<div class="topo">
+  <h1>Rede credenciada <em>Amil</em> — <span id="tituloEstado">Paraná, Santa Catarina e São Paulo</span></h1>
+  <div class="estados" id="estados" hidden></div>
+  <span class="data" id="dataColeta"></span>
+  <span class="recorte" id="recorteUf" hidden></span>
+  <span class="selo">Mazza Broker</span>
+</div>
+
+<nav class="abas" id="abas" aria-label="Seções">
+  <button type="button" class="aba ativa" data-aba="panorama">Visão geral</button>
+  <button type="button" class="aba" data-aba="entre">Entre planos</button>
+  <button type="button" class="aba" data-aba="rede">Rede completa</button>
+</nav>
+
+<section class="entre" id="entre" hidden>
+  <div class="entre-topo">
+    <div class="entre-cabeca">
+      <h2>O que muda entre dois planos</h2>
+      <p>Escolha o plano que o cliente tem hoje e o que está sendo
+         considerado. A comparação usa a praça filtrada na aba Rede completa.</p>
+    </div>
+    <div class="entre-escolha">
+      <label for="planoA">Plano atual</label>
+      <select id="planoA"></select>
+      <span class="seta-entre" aria-hidden="true">→</span>
+      <label for="planoB">Comparar com</label>
+      <select id="planoB"></select>
+      <button type="button" id="pdfEntre">Gerar PDF</button>
+    </div>
+  </div>
+  <div class="entre-corpo" id="entreCorpo"></div>
+</section>
+
+<section class="panorama" id="panorama">
+  <div class="pan-topo">
+    <div class="pan-numeros" id="panNumeros"></div>
+    <p class="pan-nota" id="panNota"></p>
+  </div>
+
+  <div class="pan-mapa">
+    <div class="pan-cabeca">
+      <h2>Onde está a rede</h2>
+      <p>Cada círculo é uma cidade; o tamanho acompanha quantos prestadores
+         atendem nela. Passe o cursor para ver os números.</p>
+    </div>
+    <div class="mapa-caixa">
+      <svg id="mapa" class="mapa" role="img" aria-label="Mapa da rede credenciada"></svg>
+      <div class="mapa-dica" id="mapaDica" hidden></div>
+    </div>
+    <div class="mapa-legenda" id="mapaLegenda"></div>
+  </div>
+
+  <div class="pan-graficos">
+    <figure class="gr">
+      <figcaption>
+        <h2>Prestadores por produto</h2>
+        <p>Quantos prestadores a rede de cada plano alcança.</p>
+      </figcaption>
+      <div class="gr-corpo" id="grPrestadores"></div>
+    </figure>
+    <figure class="gr">
+      <figcaption>
+        <h2>Cidades atendidas por produto</h2>
+        <p>Onde o plano chega. É aqui que a diferença entre um produto e
+           outro costuma aparecer.</p>
+      </figcaption>
+      <div class="gr-corpo" id="grCidades"></div>
+    </figure>
+  </div>
+
+  <div class="pan-legenda-linhas" id="legendaLinhas"></div>
+</section>
+
+<div class="rede" id="rede" hidden>
+<div class="painel">
+  <div class="linha-campos">
+    <div class="campo"><label for="q">Prestador ou CNPJ</label>
+      <input id="q" placeholder="hospital, laboratório, nome…"></div>
+    <div class="campo"><span class="rotulo">Rede de (praça)</span>
+      <button type="button" class="seletor" data-campo="cid" aria-haspopup="listbox">
+        <span class="resumo">Todas</span><span class="seta">&#9660;</span></button></div>
+    <div class="campo"><span class="rotulo">Cidade do prestador</span>
+      <button type="button" class="seletor" data-campo="cidr" aria-haspopup="listbox">
+        <span class="resumo">Todas</span><span class="seta">&#9660;</span></button></div>
+    <div class="campo"><span class="rotulo">Categoria</span>
+      <button type="button" class="seletor" data-campo="cat" aria-haspopup="listbox">
+        <span class="resumo">Todas</span><span class="seta">&#9660;</span></button></div>
+    <div class="campo"><span class="rotulo">Especialidade</span>
+      <button type="button" class="seletor" data-campo="esp" aria-haspopup="listbox">
+        <span class="resumo">Todas</span><span class="seta">&#9660;</span></button></div>
+    <div class="campo"><span class="rotulo">Bairro</span>
+      <button type="button" class="seletor" data-campo="bairro" aria-haspopup="listbox">
+        <span class="resumo">Todos</span><span class="seta">&#9660;</span></button></div>
+    <div class="campo"><span class="rotulo">Perto de (bairro)</span>
+      <button type="button" class="seletor" id="perto" aria-haspopup="listbox">
+        <span class="resumo">Não ordenar</span><span class="seta">&#9660;</span></button></div>
+    <div class="campo"><span class="rotulo">Ações</span>
+      <div class="botoes">
+        <button id="pdf" type="button">Gerar PDF</button>
+        <button id="csv" type="button" class="vazado">CSV</button>
+        <button id="limpar" type="button" class="vazado">Limpar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="escolhidos" id="escolhidos"></div>
+
+<div class="lista-flutuante" id="listaFlutuante" hidden>
+  <div class="topo-lista">
+    <span id="tituloLista">Filtro</span>
+    <button type="button" id="fecharX" aria-label="Fechar">&times;</button>
+  </div>
+  <input id="buscaLista" placeholder="filtrar a lista…" autocomplete="off">
+  <div class="opcoes" id="opcoesLista"></div>
+  <div class="pe-lista">
+    <span class="conta" id="contaLista"></span>
+    <span style="display:flex;gap:7px">
+      <button type="button" class="vazado" id="limparLista">Limpar</button>
+      <button type="button" id="prontoLista">Fechar</button>
+    </span>
+  </div>
+</div>
+
+<div class="produtos">
+  <div class="cabec-produtos">
+    <span class="rotulo passo">Escolha o produto</span>
+    <span class="instrucao" id="instrucao">Clique nos planos —
+      pode marcar mais de um</span>
+    <button type="button" class="vazado limpar-sel" id="limparSel" hidden>
+      Limpar seleção</button>
+    <button type="button" class="vazado assinatura" id="abrirCorretor">
+      <span class="etiq">PDF assinado por</span>
+      <span id="quemAssina">—</span>
+    </button>
+    <span class="alternador" id="modo">
+      <span data-m="ou" class="ativo">atende a qualquer um</span>
+      <span data-m="e">atende a todos</span>
+    </span>
+    <span class="miudo" id="dicaModo"></span>
+    <span class="miudo" style="margin-left:auto">A busca por cidade traz a rede
+      da região — parte dos prestadores fica em municípios vizinhos.</span>
+  </div>
+  <p class="nota-familia">Cada cartão é uma <b>rede</b>, não um contrato:
+     enfermaria e apartamento (QC e QP) compartilham a mesma rede, e a linha
+     de <b>Adesão</b> usa a rede do PME/PJ correspondente — Adesão Prata está
+     dentro de Prata, Adesão Ouro dentro de Ouro, e assim por diante.</p>
+  <div class="grupos" id="grupos"></div>
+</div>
+
+<div class="aviso-download" id="avisoDownload" hidden></div>
+<div class="resumo" id="resumo"></div>
+<div class="grade"><table id="tabela"></table></div>
+<div class="nada" id="nada" hidden>Nenhum prestador com esses filtros.</div>
+</div>
+
+<div class="painel-corretor" id="painelCorretor" hidden>
+  <div class="pc-caixa" role="dialog" aria-label="Seus dados no PDF">
+    <div class="pc-topo">
+      <h2>Seus dados no PDF</h2>
+      <button type="button" class="x" id="fecharCorretor"
+              aria-label="Fechar">×</button>
+    </div>
+    <p class="pc-nota">Quem gera o PDF assina com o próprio contato. Estes
+       dados ficam guardados <b>só neste navegador</b> — não são enviados
+       para lugar nenhum e não aparecem para quem receber o link.
+       A marca do material é <b>Mazza Broker</b> e não muda.</p>
+    <div class="pc-campos">
+      <div class="campo"><label for="cNome">Seu nome</label>
+        <input id="cNome" placeholder="Nome e sobrenome" autocomplete="name"></div>
+      <div class="campo"><label>Corretora</label>
+        <div class="fixo" id="cCorretora">Mazza Broker</div></div>
+      <div class="campo"><label for="cEmail">E-mail</label>
+        <input id="cEmail" type="email" placeholder="voce@corretora.com.br"
+               autocomplete="email"></div>
+      <div class="campo"><label for="cFone">Telefone</label>
+        <input id="cFone" placeholder="(41) 90000-0000" autocomplete="tel"></div>
+    </div>
+    <div class="pc-acoes">
+      <button type="button" id="salvarCorretor">Salvar</button>
+      <button type="button" class="vazado" id="restaurarCorretor">
+        Voltar ao padrão</button>
+    </div>
+  </div>
+</div>
+
+<div class="rodape">
+  <span class="aviso">A rede é definida e alterada exclusivamente pela operadora.
+    Esta página é o retrato da data indicada no topo —
+    <strong>confirme no portal da Amil antes de contratar.</strong></span>
+  <span class="assina" id="assinaRodape"></span>
+</div>
+
