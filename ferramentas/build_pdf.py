@@ -1,166 +1,415 @@
 # -*- coding: utf-8 -*-
-import os, sys, datetime
+"""Os dois PDFs do comparativo.
+
+Fala a mesma língua visual do PDF que a página gera: capa vermelha da Paraná
+Clínicas, selo dourado da Mazza, faixas de categoria e a mesma cor por plano.
+"""
+import os, sys, re, datetime
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _local  # noqa: F401  (fixa o diretorio de trabalho)
-from common import PLANOS, ORDEM_CAT, norm
+from common import PLANOS, ORDEM_CAT, CATS_EXAME, norm
 from build_comp import concilia
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import mm
 from reportlab.lib import colors
-from reportlab.platypus import (BaseDocTemplate, PageTemplate, Frame, Paragraph, Spacer,
-                                Table, TableStyle, NextPageTemplate, PageBreak)
+from reportlab.platypus import (BaseDocTemplate, PageTemplate, Frame, Paragraph,
+                                Spacer, Table, TableStyle, NextPageTemplate, PageBreak)
 from reportlab.lib.styles import ParagraphStyle
-from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 
 BASE = _local.RAIZ
 D2 = os.path.join(BASE, "02 - COMPARATIVOS DE REDE")
 PW, PH = landscape(A4)
-NAVY = colors.HexColor("#10233f"); GOLD = colors.HexColor("#c9a227")
-INK = colors.HexColor("#1c2230"); MUT = colors.HexColor("#6b7686")
-LINE = colors.HexColor("#dfe4ec")
+
+# ------------------------------------------------------------------- cores
+MARCA = colors.HexColor("#8e0e28")      # vermelho Paraná Clínicas
+MARCA2 = colors.HexColor("#a81b39")     # faixa de categoria
+OURO = colors.HexColor("#9a7513")       # acento Mazza Broker
+OURO_CLARO = colors.HexColor("#edc97e")
+TINTA = colors.HexColor("#1b2331")
+CINZA = colors.HexColor("#66707f")
+CINZA_CLARO = colors.HexColor("#98a1b0")
+RISCO = colors.HexColor("#eee2e5")
+ZEBRA = colors.HexColor("#fdf7f8")
+BRANCO = colors.white
+
 CURTOS = [p[2] for p in PLANOS]
-CORES = {"400 QP": colors.HexColor("#a80a32"), "600 QC": colors.HexColor("#1f6b4e"),
-         "CIM QC": colors.HexColor("#2a2abf")}
-HEXS = {"400 QP": "#a80a32", "600 QC": "#1f6b4e", "CIM QC": "#2a2abf"}
-TINT = {"400 QP": colors.HexColor("#fbeef1"), "600 QC": colors.HexColor("#edf5f1"),
-        "CIM QC": colors.HexColor("#eeeefb")}
+# as mesmas dos cartões da página — validadas para daltonismo e contraste
+HEX = {"400 QP": "#a80a32", "600 QC": "#6b3f8f", "CIM QC": "#b5761b"}
+CORES = {k: colors.HexColor(v) for k, v in HEX.items()}
+TINT = {"400 QP": colors.HexColor("#fdf2f5"), "600 QC": colors.HexColor("#f5f1fa"),
+        "CIM QC": colors.HexColor("#fdf6ec")}
+# Na capa o fundo é o vermelho da marca: o #a80a32 do plano 400 sumiria dentro
+# dele. Estes são os mesmos matizes, clareados até separarem sobre o vermelho
+# (conferido no validador; o nome do plano vem escrito junto, então a cor não
+# carrega sozinha a identidade).
+CAPA = {"400 QP": colors.HexColor("#e06a80"), "600 QC": colors.HexColor("#a98ad6"),
+        "CIM QC": colors.HexColor("#d9a84e")}
 HOJE = datetime.date.today().strftime("%d/%m/%Y")
 
+# ---------------------------------------------------------------- tipografia
 def S(name, **k):
     return ParagraphStyle(name, **k)
 
-st_nome = S("nome", fontName="Helvetica-Bold", fontSize=7.6, leading=9.2, textColor=INK)
-st_cel = S("cel", fontName="Helvetica", fontSize=7.0, leading=8.6, textColor=INK)
-st_h = S("h", fontName="Helvetica-Bold", fontSize=7.2, leading=8.6,
-         textColor=colors.white, alignment=TA_CENTER)
-st_chk = S("chk", fontName="Helvetica-Bold", fontSize=9, leading=10, alignment=TA_CENTER)
+
+st_nome = S("nome", fontName="Helvetica-Bold", fontSize=8, leading=9.6, textColor=TINTA)
+st_cel = S("cel", fontName="Helvetica", fontSize=7.2, leading=9, textColor=TINTA)
+st_h = S("h", fontName="Helvetica-Bold", fontSize=7.4, leading=9,
+         textColor=BRANCO, alignment=TA_CENTER)
+st_hL = S("hL", fontName="Helvetica-Bold", fontSize=7.4, leading=9, textColor=BRANCO)
+st_chk = S("chk", fontName="Helvetica-Bold", fontSize=10, leading=11, alignment=TA_CENTER)
+st_hR = S("hR", fontName="Helvetica-Bold", fontSize=7.4, leading=9, textColor=BRANCO,
+          alignment=TA_RIGHT)
+
+MIUDAS = {"de", "da", "do", "das", "dos", "e", "em", "a", "o", "as", "os", "no",
+          "na", "para", "com", "por"}
+
+
+SIGLAS = {"CIM", "IPO", "SUS", "UTI", "CL", "CDI", "CEDAV", "PR", "SC", "UPA",
+          "HC", "AMB", "PS", "SA", "S/A", "LTDA", "ME", "TEA", "ONG"}
+
+
+def bonito(t):
+    """A operadora mistura CAIXA ALTA e Title Case no mesmo campo.
+
+    Num nome todo em maiúscula, QUALQUER palavra curta parece sigla — era assim
+    que saía "Hospital DO Centro" e "Hospital SAO Lucas". Então a regra de sigla
+    só vale quando o nome original tem caixa mista; se veio todo em maiúscula,
+    só a lista conhecida escapa.
+    """
+    t = (t or "").strip()
+    if not t:
+        return ""
+    letras = [c for c in t if c.isalpha()]
+    tudo_maiusculo = bool(letras) and all(c.isupper() for c in letras)
+    saida = []
+    for i, p in enumerate(re.split(r"(\s+|[-/])", t)):
+        if not p.strip() or p in ("-", "/"):
+            saida.append(p)
+            continue
+        b, alto = p.lower(), p.upper()
+        if alto in SIGLAS:
+            saida.append(alto)
+        elif not tudo_maiusculo and len(p) <= 4 and p.isupper() and p.isalpha():
+            saida.append(p)
+        elif b in MIUDAS and i > 0:
+            saida.append(b)
+        else:
+            saida.append(b[:1].upper() + b[1:])
+    return "".join(saida)
 
 
 def esc(t):
     return (t or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
+# ------------------------------------------------------------------ páginas
 class Doc(BaseDocTemplate):
-    def __init__(self, fn, subtitulo):
+    def __init__(self, fn, subtitulo, resumo):
         BaseDocTemplate.__init__(self, fn, pagesize=(PW, PH), leftMargin=12 * mm,
-                                 rightMargin=12 * mm, topMargin=14 * mm, bottomMargin=13 * mm,
-                                 title="Comparativo de Rede - Parana Clinicas", author="Mazza Broker")
-        self.subtitulo = subtitulo
-        f = Frame(12 * mm, 13 * mm, PW - 24 * mm, PH - 27 * mm, id="n")
+                                 rightMargin=12 * mm, topMargin=13 * mm,
+                                 bottomMargin=13 * mm,
+                                 title="Comparativo de Rede - Parana Clinicas",
+                                 author="Mazza Broker")
+        self.subtitulo, self.resumo = subtitulo, resumo
+        f = Frame(12 * mm, 13 * mm, PW - 24 * mm, PH - 26 * mm, id="n")
         self.addPageTemplates([
             PageTemplate(id="capa", frames=[Frame(0, 0, PW, PH, id="c")], onPage=self.capa),
             PageTemplate(id="normal", frames=[f], onPage=self.rodape)])
 
+    # -- capa: o vazio de antes virou o resumo da rede, que é o que interessa
     def capa(self, c, d):
         c.saveState()
-        c.setFillColor(NAVY); c.rect(0, 0, PW, PH, fill=1, stroke=0)
-        x = 30 * mm
-        c.setFillColor(colors.white); c.setFont("Times-Bold", 32)
-        c.drawString(x, PH - 88 * mm, "Comparativo de Rede Credenciada")
-        c.setFillColor(GOLD); c.setFont("Times-Italic", 23)
-        c.drawString(x, PH - 101 * mm, "Paran\u00e1 Cl\u00ednicas \u00b7 Curitiba e Regi\u00e3o Metropolitana")
-        w = 46 * mm
+        c.setFillColor(MARCA); c.rect(0, 0, PW, PH, fill=1, stroke=0)
+        c.setFillColor(OURO); c.rect(0, PH - 2.2 * mm, PW, 2.2 * mm, fill=1, stroke=0)
+        # título em cima, cartões embaixo: o branco fica ENTRE os dois blocos,
+        # de propósito, em vez de sobrar no pé da página
+        x, topo = 28 * mm, PH - 46 * mm
+
+        c.setFillColor(OURO); c.rect(x, topo + 1.5, 2.6, 9, fill=1, stroke=0)
+        c.setFillColor(OURO_CLARO); c.setFont("Helvetica-Bold", 8.5)
+        c.drawString(x + 9, topo + 3, "CURITIBA E REGIÃO METROPOLITANA")
+
+        c.setFillColor(BRANCO); c.setFont("Times-Bold", 40)
+        c.drawString(x, topo - 22 * mm, "Rede Credenciada")
+        c.setFillColor(OURO_CLARO); c.setFont("Times-Italic", 31)
+        c.drawString(x, topo - 34 * mm, "Paraná Clínicas")
+        c.setStrokeColor(OURO); c.setLineWidth(1.1)
+        c.line(x, topo - 40 * mm, x + 62 * mm, topo - 40 * mm)
+
+        c.setFillColor(colors.HexColor("#f0cdd5")); c.setFont("Helvetica", 10.5)
+        c.drawString(x, topo - 48 * mm, self.subtitulo)
+
+        # os três planos, com o tamanho da rede de cada um
+        yc = 50 * mm
+        larg, gap = 52 * mm, 6 * mm
         for i, k in enumerate(CURTOS):
-            c.setFillColor(CORES[k])
-            c.rect(x + i * (w + 4 * mm), PH - 112 * mm, w, 3.2 * mm, fill=1, stroke=0)
-        c.setFillColor(colors.HexColor("#c3ccda")); c.setFont("Helvetica", 11)
-        c.drawString(x, PH - 126 * mm, self.subtitulo)
-        c.drawString(x, PH - 133 * mm,
-                     "Planos Paran\u00e1 400 AHO QP \u00b7 Paran\u00e1 600 AHO QC \u00b7 Paran\u00e1 CIM AHO QC (COPART SR)")
-        c.drawString(x, PH - 140 * mm, "Consulta realizada em %s na busca oficial da operadora." % HOJE)
-        c.setFillColor(GOLD); c.setFont("Times-Bold", 17)
-        c.drawString(x, 30 * mm, "Mazza Broker")
-        c.setFillColor(colors.HexColor("#8d97a6")); c.setFont("Helvetica", 8.6)
-        c.drawString(x, 24 * mm, "Alan Vinicius Dall Alba \u00b7 (41) 99547-6715 \u00b7 alan.vinicius@mazzabroker.com.br")
+            bx = x + i * (larg + gap)
+            c.setFillColor(colors.HexColor("#ffffff")); c.setFillAlpha(0.08)
+            c.rect(bx, yc, larg, 21 * mm, fill=1, stroke=0)
+            c.setFillAlpha(1)
+            c.setFillColor(CAPA[k]); c.rect(bx, yc + 19 * mm, larg, 2 * mm, fill=1, stroke=0)
+            c.setFillColor(BRANCO); c.setFont("Helvetica-Bold", 10)
+            c.drawString(bx + 7, yc + 12.5 * mm, "Paraná " + k.split()[0])
+            c.setFillColor(colors.HexColor("#f0cdd5")); c.setFont("Helvetica", 7.6)
+            c.drawString(bx + 7, yc + 8.5 * mm,
+                         "QP · apartamento" if k.endswith("QP") else "QC · enfermaria")
+            c.setFillColor(BRANCO); c.setFont("Times-Bold", 17)
+            c.drawRightString(bx + larg - 7, yc + 8 * mm, str(self.resumo["planos"][k]))
+            c.setFillColor(colors.HexColor("#e3adb9")); c.setFont("Helvetica", 6.2)
+            c.drawRightString(bx + larg - 7, yc + 4.6 * mm, "PRESTADORES")
+
+        c.setFillColor(colors.HexColor("#e3adb9")); c.setFont("Helvetica", 9)
+        c.drawString(x, topo - 60 * mm,
+                     "Levantado na busca oficial de rede credenciada da Paraná Clínicas "
+                     "em " + HOJE + ".")
+
+        # assinatura
+        c.setFillColor(OURO); c.rect(x, 22 * mm, 34 * mm, 11 * mm, fill=1, stroke=0)
+        c.setFillColor(colors.HexColor("#2b0710")); c.setFont("Times-Bold", 13)
+        c.drawString(x + 5.5, 27.2 * mm, "Mazza")
+        c.setFont("Helvetica-Bold", 5.6)
+        c.drawString(x + 5.5, 24 * mm, "B R O K E R")
+        c.setFillColor(colors.HexColor("#f0cdd5")); c.setFont("Helvetica", 9)
+        c.drawString(x + 40 * mm, 28.5 * mm, "Alan Vinicius Dall Alba")
+        c.setFillColor(colors.HexColor("#d4939f"))
+        c.drawString(x + 40 * mm, 24.2 * mm,
+                     "(41) 99547-6715   ·   alan.vinicius@mazzabroker.com.br")
+
+        # rodapé da capa: as três cores, na largura da página
+        for i, k in enumerate(CURTOS):
+            c.setFillColor(CAPA[k])
+            c.rect(i * PW / 3.0, 0, PW / 3.0 + 1, 4 * mm, fill=1, stroke=0)
         c.restoreState()
 
     def rodape(self, c, d):
         c.saveState()
-        c.setStrokeColor(LINE); c.setLineWidth(.5)
+        c.setFillColor(MARCA); c.rect(0, PH - 3 * mm, PW, 3 * mm, fill=1, stroke=0)
+        c.setStrokeColor(RISCO); c.setLineWidth(.5)
         c.line(12 * mm, 10.5 * mm, PW - 12 * mm, 10.5 * mm)
-        c.setFillColor(MUT); c.setFont("Helvetica", 7)
-        c.drawString(12 * mm, 6.8 * mm,
-                     "Mazza Broker \u00b7 Rede credenciada Paran\u00e1 Cl\u00ednicas \u2014 Curitiba & Regi\u00e3o")
-        c.setFillColor(GOLD); c.setFont("Helvetica-Bold", 8)
-        c.drawRightString(PW - 12 * mm, 6.8 * mm, str(c.getPageNumber() - 1))
+        c.setFillColor(OURO); c.rect(12 * mm, 6.2 * mm, 2, 7, fill=1, stroke=0)
+        c.setFillColor(CINZA); c.setFont("Helvetica", 7)
+        c.drawString(12 * mm + 7, 6.9 * mm,
+                     "Mazza Broker  ·  Rede credenciada Paraná Clínicas — Curitiba & Região"
+                     "  ·  " + HOJE)
+        c.setFillColor(MARCA); c.setFont("Helvetica-Bold", 8.5)
+        c.drawRightString(PW - 12 * mm, 6.9 * mm, str(c.getPageNumber() - 1))
         c.restoreState()
 
 
-def pagina_como_ler():
-    tit = S("ct", fontName="Times-Bold", fontSize=17, leading=20, textColor=NAVY)
-    ch = S("ch", fontName="Helvetica-Bold", fontSize=9, leading=11, textColor=NAVY)
-    cb = S("cb", fontName="Helvetica", fontSize=7.8, leading=10, textColor=INK)
-    cards = [[Paragraph("\u2714 Atende", ch),
-              Paragraph("A cor identifica o plano", ch),
-              Paragraph("\u00b7 N\u00e3o consta", ch)],
-             [Paragraph("O prestador consta na rede daquele plano, na cidade e endere\u00e7o indicados.", cb),
-              Paragraph("<font color='#a80a32'>400 QP</font> \u00b7 <font color='#1f6b4e'>600 QC</font> "
-                        "\u00b7 <font color='#2a2abf'>CIM QC</font> \u2014 cada coluna tem sua faixa de cor.", cb),
-              Paragraph("O prestador n\u00e3o apareceu na busca oficial daquele plano na data da consulta.", cb)]]
-    t = Table(cards, colWidths=[(PW - 24 * mm) / 3.0] * 3, rowHeights=[14, 32])
-    t.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f3f5f9")),
-                           ("BOX", (0, 0), (0, -1), .9, CORES["400 QP"]),
-                           ("BOX", (1, 0), (1, -1), .9, CORES["600 QC"]),
-                           ("BOX", (2, 0), (2, -1), .9, CORES["CIM QC"]),
-                           ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                           ("LEFTPADDING", (0, 0), (-1, -1), 9), ("RIGHTPADDING", (0, 0), (-1, -1), 9),
-                           ("TOPPADDING", (0, 0), (-1, -1), 7)]))
+# --------------------------------------------------- página 2: números + legenda
+def numero(v, rot):
+    return ('<font name="Times-Bold" size="22" color="#8e0e28">%s</font><br/>'
+            '<font name="Helvetica" size="6.4" color="#66707f">%s</font>'
+            % (v, esc(rot.upper())))
+
+
+def bloco_cidades(resumo):
+    """Onde a rede está, em barras. É o que preenche a metade de baixo da página
+    — antes ficava em branco."""
+    tit = S("t3", fontName="Times-Bold", fontSize=13, leading=16, textColor=MARCA)
+    rot = S("r", fontName="Helvetica", fontSize=7.4, leading=9, textColor=TINTA)
+    val = S("v", fontName="Helvetica-Bold", fontSize=7.4, leading=9, textColor=CINZA)
+    dados = resumo["cidades"][:12]
+    maior = max([n for _, n in dados] or [1])
+    larg_barra = 46 * mm
+    linhas, estilo = [], [("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                          ("TOPPADDING", (0, 0), (-1, -1), 2.5),
+                          ("BOTTOMPADDING", (0, 0), (-1, -1), 2.5),
+                          ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                          ("RIGHTPADDING", (0, 0), (-1, -1), 8)]
+    meio = (len(dados) + 1) // 2
+    for i in range(meio):
+        linha, r = [], i
+        for col in (dados[i:i + 1], dados[meio + i:meio + i + 1]):
+            if not col:
+                linha += ["", "", ""]
+                continue
+            cid, n = col[0]
+            barra = Table([[""]], colWidths=[max(2.2 * mm, larg_barra * n / maior)],
+                          rowHeights=[5])
+            barra.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), MARCA2),
+                                       ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                                       ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                                       ("TOPPADDING", (0, 0), (-1, -1), 0),
+                                       ("BOTTOMPADDING", (0, 0), (-1, -1), 0)]))
+            linha += [Paragraph(esc(bonito(cid)), rot), barra,
+                      Paragraph(str(n), val)]
+        linhas.append(linha)
+    larg_rot = 46 * mm
+    t = Table(linhas, colWidths=[larg_rot, larg_barra + 6 * mm, 12 * mm] * 2,
+              hAlign="LEFT")
+    t.setStyle(TableStyle(estilo))
+    return [Paragraph("Onde a rede está", tit),
+            Paragraph("Prestadores por cidade, somando os três planos.",
+                      S("t4", fontName="Helvetica", fontSize=8, leading=11,
+                        textColor=CINZA)),
+            Spacer(1, 9), t]
+
+
+def pagina_abertura(resumo):
+    tit = S("t1", fontName="Times-Bold", fontSize=18, leading=21, textColor=MARCA)
+    sub = S("t2", fontName="Helvetica", fontSize=8.6, leading=11.5, textColor=CINZA)
+    cel = S("num", fontName="Helvetica", fontSize=8, leading=13, textColor=TINTA)
+
+    # 2 linhas de 4: em uma linha só, os rótulos longos quebravam e a fila de
+    # números saía desalinhada
+    quadros = [q for q in resumo["quadros"] if q[0]]
+    while len(quadros) % 4:
+        quadros.append(("", ""))
+    grade = [[Paragraph(numero(v, r) if r else "", cel) for v, r in quadros[i:i + 4]]
+             for i in range(0, len(quadros), 4)]
+    t = Table(grade, colWidths=[(PW - 24 * mm) / 4.0] * 4,
+              rowHeights=[16 * mm] * len(grade))
+    t.setStyle(TableStyle([
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("LINEBEFORE", (1, 0), (-1, -1), .6, RISCO),
+        ("LINEBELOW", (0, 0), (-1, -2), .6, RISCO),
+        ("LEFTPADDING", (0, 0), (-1, -1), 10), ("TOPPADDING", (0, 0), (-1, -1), 0),
+    ]))
+
+    ch = S("ch", fontName="Helvetica-Bold", fontSize=8.6, leading=11, textColor=MARCA)
+    cb = S("cb", fontName="Helvetica", fontSize=7.8, leading=10.5, textColor=TINTA)
+    cards = [[Paragraph("✓  Atende", ch),
+              Paragraph("Cada plano tem sua cor", ch),
+              Paragraph("–  Não consta", ch)],
+             [Paragraph("O prestador consta na rede daquele plano, no endereço indicado. "
+                        "A coluna do plano fica marcada.", cb),
+              Paragraph(" · ".join('<font color="%s"><b>%s</b></font>' % (HEX[k], k)
+                                   for k in CURTOS) +
+                        " — a mesma cor dos cartões na página de consulta.", cb),
+              Paragraph("O prestador não apareceu na busca oficial daquele plano "
+                        "na data desta consulta.", cb)]]
+    tc = Table(cards, colWidths=[(PW - 24 * mm - 2 * 6 * mm) / 3.0] * 3,
+               rowHeights=[13, 30], colWidths2=None) if False else \
+        Table(cards, colWidths=[(PW - 24 * mm - 12 * mm) / 3.0] * 3, rowHeights=[13, 30])
+    tc.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#fdf7f8")),
+        ("LINEABOVE", (0, 0), (0, 0), 2, CORES["400 QP"]),
+        ("LINEABOVE", (1, 0), (1, 0), 2, CORES["600 QC"]),
+        ("LINEABOVE", (2, 0), (2, 0), 2, CORES["CIM QC"]),
+        ("BOX", (0, 0), (-1, -1), 0, BRANCO),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 10), ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+        ("TOPPADDING", (0, 0), (-1, -1), 8),
+    ]))
+
     aviso = Table([[Paragraph(
-        "<b>A rede credenciada \u00e9 definida e alterada exclusivamente pela operadora.</b> Este material tem "
-        "car\u00e1ter informativo e reflete a consulta feita em %s na busca oficial da Paran\u00e1 Cl\u00ednicas. "
-        "Confirme sempre no portal da operadora antes de contratar. Os prestadores est\u00e3o agrupados por "
-        "categoria e, dentro de cada uma, pela abrang\u00eancia nos planos e pela cidade." % HOJE,
-        S("av", fontName="Helvetica", fontSize=8, leading=11, textColor=colors.white))]],
+        '<b>A rede credenciada é definida e alterada exclusivamente pela operadora.</b>  '
+        'Este material é informativo e retrata a consulta feita em %s. Confirme no portal '
+        'da Paraná Clínicas antes de contratar. Os prestadores estão agrupados pela '
+        'categoria que a operadora publica e, dentro de cada uma, pela abrangência nos '
+        'planos e pela cidade.' % HOJE,
+        S("av", fontName="Helvetica", fontSize=8, leading=11.5, textColor=BRANCO))]],
         colWidths=[PW - 24 * mm])
-    aviso.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), NAVY),
-                               ("LEFTPADDING", (0, 0), (-1, -1), 12), ("RIGHTPADDING", (0, 0), (-1, -1), 12),
-                               ("TOPPADDING", (0, 0), (-1, -1), 10), ("BOTTOMPADDING", (0, 0), (-1, -1), 10)]))
-    return [Paragraph("Como ler este comparativo", tit), Spacer(1, 10), t, Spacer(1, 16), aviso]
+    aviso.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), MARCA),
+                               ("LEFTPADDING", (0, 0), (-1, -1), 12),
+                               ("RIGHTPADDING", (0, 0), (-1, -1), 12),
+                               ("TOPPADDING", (0, 0), (-1, -1), 10),
+                               ("BOTTOMPADDING", (0, 0), (-1, -1), 10)]))
+
+    return [Paragraph("A rede em números", tit),
+            Paragraph("Tudo que os três planos somados alcançam em Curitiba e Região. "
+                      "Nas páginas seguintes, prestador por prestador.", sub),
+            Spacer(1, 12), t, Spacer(1, 22),
+            Paragraph("Como ler este comparativo", tit), Spacer(1, 10), tc,
+            Spacer(1, 16), aviso, Spacer(1, 20)] + bloco_cidades(resumo)
 
 
-COLW = [74 * mm, 33 * mm, 73 * mm, 24 * mm] + [21 * mm] * 3
+# ------------------------------------------------------------------- tabela
+COLW = [82 * mm, 29 * mm, 58 * mm, 36 * mm] + [21 * mm] * 3
+MAX_ESP = 8          # sem teto, um hospital estica a linha para 4x a altura
+
+
+def celula_nome(d):
+    esp = [e.strip() for e in (d["esp"] or "").split(",") if e.strip()]
+    extra = len(esp) - MAX_ESP
+    txt = ", ".join(bonito(e) for e in esp[:MAX_ESP])
+    if extra > 0:
+        txt += " <font color='#98a1b0'>+%d</font>" % extra
+    marca = (' <font size="5.4" color="#98a1b0">· acessível</font>'
+             if d.get("acess") else "")
+    return Paragraph("%s%s<br/><font size=6.3 color='#66707f'>%s</font>"
+                     % (esc(bonito(d["nome"])), marca, esc(txt) if not extra else txt),
+                     st_nome)
+
+
+def celula_contato(d):
+    linhas = [esc(d["tel"] or "")]
+    if d.get("tel2") and d["tel2"] != d["tel"]:
+        linhas.append("<font size=6.3 color='#66707f'>%s</font>" % esc(d["tel2"]))
+    if d.get("email"):
+        linhas.append("<font size=5.8 color='#98a1b0'>%s</font>" % esc(d["email"]))
+    return Paragraph("<br/>".join(linhas), st_cel)
 
 
 def tabela(linhas):
-    head = [Paragraph("Prestador / especialidades", st_h), Paragraph("Cidade / bairro", st_h),
-            Paragraph("Endere\u00e7o", st_h), Paragraph("Telefone", st_h)] + \
-           [Paragraph(c, st_h) for c in CURTOS]
+    head = [Paragraph("Prestador / especialidades", st_hL),
+            Paragraph("Cidade / bairro", st_hL),
+            Paragraph("Endereço", st_hL),
+            Paragraph("Contato", st_hL)] + [Paragraph(c, st_h) for c in CURTOS]
     data = [head]
-    style = [("BACKGROUND", (0, 0), (3, 0), NAVY),
+    style = [("BACKGROUND", (0, 0), (3, 0), MARCA),
              ("VALIGN", (0, 0), (-1, -1), "TOP"),
-             ("TOPPADDING", (0, 0), (-1, -1), 3.5), ("BOTTOMPADDING", (0, 0), (-1, -1), 3.5),
-             ("LEFTPADDING", (0, 0), (-1, -1), 5), ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-             ("LINEBELOW", (0, 1), (-1, -1), .4, LINE)]
+             ("TOPPADDING", (0, 0), (-1, -1), 4), ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+             ("LEFTPADDING", (0, 0), (-1, -1), 6), ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+             ("LINEBELOW", (0, 1), (-1, -1), .4, RISCO)]
     for i, k in enumerate(CURTOS):
         style.append(("BACKGROUND", (4 + i, 0), (4 + i, 0), CORES[k]))
         style.append(("BACKGROUND", (4 + i, 1), (4 + i, -1), TINT[k]))
     r = 1
+    zebra = 0
     for kind, item in linhas:
         if kind == "cat":
-            data.append([Paragraph(item.upper(), S("c%d" % r, fontName="Helvetica-Bold",
-                                                   fontSize=7.6, leading=9.5, textColor=NAVY))] + [""] * 6)
-            style += [("SPAN", (0, r), (-1, r)),
-                      ("BACKGROUND", (0, r), (-1, r), colors.HexColor("#e9edf4")),
-                      ("TOPPADDING", (0, r), (-1, r), 6), ("BOTTOMPADDING", (0, r), (-1, r), 5)]
+            cat, n = item
+            data.append([Paragraph(esc(cat.upper()), st_hL), "", "", "",
+                         Paragraph("%d" % n, st_hR), "", ""])
+            style += [("SPAN", (0, r), (3, r)), ("SPAN", (4, r), (-1, r)),
+                      ("BACKGROUND", (0, r), (-1, r), MARCA2),
+                      ("TOPPADDING", (0, r), (-1, r), 5),
+                      ("BOTTOMPADDING", (0, r), (-1, r), 5)]
+            zebra = 0
         else:
             d = item
-            nome = Paragraph("%s<br/><font size=6.3 color='#6b7686'>%s</font>"
-                             % (esc(d["nome"]), esc(d["esp"])), st_nome)
-            cid = Paragraph("%s<br/><font size=6.3 color='#6b7686'>%s</font>"
-                            % (esc(d["cidade"]), esc(d["bairro"])), st_cel)
-            end = Paragraph("%s<br/><font size=6.3 color='#6b7686'>%s</font>"
-                            % (esc(d["endereco"]), esc(d["cep"])), st_cel)
-            row = [nome, cid, end, Paragraph(esc(d["tel"]), st_cel)]
+            cid = Paragraph("%s<br/><font size=6.3 color='#66707f'>%s</font>"
+                            % (esc(bonito(d["cidade"])), esc(bonito(d["bairro"]))), st_cel)
+            end = Paragraph("%s<br/><font size=6.3 color='#66707f'>%s</font>"
+                            % (esc(bonito(d["endereco"])), esc(d["cep"])), st_cel)
+            row = [celula_nome(d), cid, end, celula_contato(d)]
             for k in CURTOS:
-                if k in d["planos"]:
-                    row.append(Paragraph("<font color='%s'>\u2714</font>" % HEXS[k], st_chk))
-                else:
-                    row.append(Paragraph("<font color='#aab3c0'>\u00b7</font>", st_chk))
+                row.append(Paragraph(
+                    "<font color='%s'>✓</font>" % HEX[k] if k in d["planos"]
+                    else "<font color='#c9ccd2'>–</font>", st_chk))
             data.append(row)
+            if zebra % 2:
+                style.append(("BACKGROUND", (0, r), (3, r), ZEBRA))
+            zebra += 1
         r += 1
     t = Table(data, colWidths=COLW, repeatRows=1)
     t.setStyle(TableStyle(style))
     return t
+
+
+# -------------------------------------------------------------------- monta
+def monta_resumo(dados):
+    def n(*cats):
+        return len([d for d in dados if d["categoria"] in cats])
+    quadros = [
+        (len(dados), "prestadores"),
+        (len(set(d["cidade"] for d in dados)), "cidades"),
+        (n("Hospitais gerais"), "hospitais gerais"),
+        (n("Hospitais especializados"), "especializados"),
+        (n("Diagnóstico por imagem"), "centros de imagem"),
+        (n(*CATS_EXAME) - n("Diagnóstico por imagem"), "laboratórios"),
+        (n("Unidades próprias CIM", "Médicos dos CIM"), "nos CIM"),
+        (n("Clínicas e policlínicas", "Consultórios", "Terapias"),
+         "clínicas e consultórios"),
+    ]
+    from collections import Counter
+    cid = Counter(d["cidade"] for d in dados)
+    return {"quadros": quadros,
+            "cidades": cid.most_common(),
+            "planos": {k: len([d for d in dados if k in d["planos"]]) for k in CURTOS}}
 
 
 def gera(fn, dados, subtitulo):
@@ -169,19 +418,22 @@ def gera(fn, dados, subtitulo):
         sub = [d for d in dados if d["categoria"] == cat]
         if not sub:
             continue
-        sub.sort(key=lambda r: (-len(r["planos"]), r["cidade"] != "Curitiba", r["cidade"], norm(r["nome"])))
-        linhas.append(("cat", cat))
+        sub.sort(key=lambda r: (-len(r["planos"]), r["cidade"] != "Curitiba",
+                                r["cidade"], norm(r["nome"])))
+        linhas.append(("cat", (cat, len(sub))))
         linhas += [("row", d) for d in sub]
-    doc = Doc(fn, subtitulo)
-    story = [NextPageTemplate("normal"), PageBreak()] + pagina_como_ler() + [PageBreak(), tabela(linhas)]
-    doc.build(story)
-    print("ok", fn, len(dados))
+    doc = Doc(fn, subtitulo, monta_resumo(dados))
+    doc.build([NextPageTemplate("normal"), PageBreak()]
+              + pagina_abertura(monta_resumo(dados))
+              + [PageBreak(), tabela(linhas)])
+    print("ok", fn, len(dados), "prestadores")
 
 
 if __name__ == "__main__":
     d = concilia()
     princ = [x for x in d if x.get("inst")]
     gera(os.path.join(D2, "COMPARATIVO REDE PARANA CLINICAS - CLIENTES (Principais).pdf"),
-         princ, "Hospitais, unidades pr\u00f3prias CIM, cl\u00ednicas e laborat\u00f3rios")
+         princ, "Hospitais, centros de diagnóstico, laboratórios, clínicas e "
+                "unidades próprias CIM")
     gera(os.path.join(D2, "COMPARATIVO REDE PARANA CLINICAS - Apresentacao.pdf"),
-         d, "Rede completa \u2014 hospitais, CIM, cl\u00ednicas, consult\u00f3rios e laborat\u00f3rios")
+         d, "Rede completa — inclui os consultórios e os médicos que atendem nos CIM")

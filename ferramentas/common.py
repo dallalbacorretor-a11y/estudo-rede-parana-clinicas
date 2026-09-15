@@ -64,6 +64,17 @@ def norm(s):
     return re.sub(r"\s+", " ", s).strip()
 
 
+# A operadora publica parte das cidades sem acento ("Sao Jose dos Pinhais").
+# Corrigir aqui vale para a página, as planilhas e os PDFs de uma vez.
+CIDADES = {"ARAUCARIA": "Araucária", "BOCAIUVA DO SUL": "Bocaiúva do Sul",
+           "ITAPERUCU": "Itaperuçu", "SAO JOSE DOS PINHAIS": "São José dos Pinhais",
+           "ALMIRANTE TAMANDARE": "Almirante Tamandaré"}
+
+
+def cidade_bonita(c):
+    return CIDADES.get(norm(c), (c or "").strip())
+
+
 def tel(t):
     t = re.sub(r"\D", "", t or "")
     if len(t) == 11:
@@ -150,7 +161,7 @@ def carrega(cod):
             "categoria": cat,
             "tipo": (d.get("tipo_estabelecimento") or r.get("_tipo") or "").strip(),
             "unidade": CIM_UNIDADE.get(r.get("_classe"), ""),
-            "cidade": r.get("_cidade", ""),
+            "cidade": cidade_bonita(r.get("_cidade")),
             "bairro": (r.get("bairro") or "").strip(),
             "endereco": endereco(r),
             "cep": (r.get("cep") or "").strip(),

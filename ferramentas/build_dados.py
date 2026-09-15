@@ -3,7 +3,8 @@
 import sys, os, json, re
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _local  # noqa: F401  (fixa o diretorio de trabalho)
-from common import (norm, LUGAR, CATEGORIAS, CATS_EXAME, CIM_UNIDADE, PADRAO)
+from common import (norm, cidade_bonita, LUGAR, CATEGORIAS, CATS_EXAME,
+                    CIM_UNIDADE, PADRAO)
 
 HOJE = "12/09/2026"
 
@@ -116,7 +117,7 @@ for k, e in linhas.items():
     e.update({
         "nome": (r.get("nome") or "").strip().upper(),
         "cnpj": cnpj_fmt(d.get("cpf_cnpj")),
-        "cidade": (r.get("_cidade") or d.get("nome_cidade") or "").upper(),
+        "cidade": cidade_bonita(r.get("_cidade") or d.get("nome_cidade")).upper(),
         "bairro": (r.get("bairro") or "").strip().upper(),
         "end": ender(r),
         "tels": [t for t in (fone(r.get("tel")), fone(r.get("tel_sec"))) if t],
