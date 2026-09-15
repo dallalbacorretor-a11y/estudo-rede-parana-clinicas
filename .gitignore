@@ -1,1 +1,6 @@
 .claude/
+__pycache__/
+*.pyc
+# intermediarios regeraveis (build_comp.py / export_xlsx.py os refazem)
+ferramentas/dados/comparativo.json
+ferramentas/dados/todos.json

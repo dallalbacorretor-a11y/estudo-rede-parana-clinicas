@@ -25,13 +25,14 @@ d.sort(key=lambda r: (ORDEM_CAT.index(r["categoria"]) if r["categoria"] in ORDEM
                       -len(r["planos"]), r["cidade"] != "Curitiba", r["cidade"], norm(r["nome"])))
 
 wb = Workbook(); ws = wb.active; ws.title = "Comparativo"
-COLS = ["Categoria", "Tipo", "Prestador", "Especialidades", "Cidade", "Bairro",
-        "Endereço", "CEP", "Telefone"] + CURTOS
-LARG = [22, 18, 42, 46, 20, 22, 44, 12, 16, 11, 11, 11]
+COLS = ["Categoria", "Tipo (operadora)", "Prestador", "CNPJ", "Especialidades",
+        "Cidade", "Bairro", "Endereço", "CEP", "Telefone", "E-mail"] + CURTOS
+LARG = [26, 30, 42, 20, 46, 20, 22, 44, 12, 16, 32, 11, 11, 11]
 ws.append(COLS)
 for r in d:
-    ws.append([r["categoria"], r["tipo"], r["nome"], r["esp"], r["cidade"], r["bairro"],
-               r["endereco"], r["cep"], r["tel"]] +
+    ws.append([r["categoria"], r["tipo"], r["nome"], r["cnpj"], r["esp"],
+               r["cidade"], r["bairro"], r["endereco"], r["cep"], r["tel"],
+               r["email"]] +
               ["✔" if c in r["planos"] else "" for c in CURTOS])
 for c in range(1, len(COLS) + 1):
     cell = ws.cell(row=1, column=c)
@@ -48,7 +49,7 @@ for row in ws.iter_rows(min_row=2):
         cell.font = Font(size=9)
         cell.border = BORD
 for i, k in enumerate(CURTOS):
-    col = get_column_letter(10 + i)
+    col = get_column_letter(12 + i)
     for r_ in range(2, ws.max_row + 1):
         c = ws["%s%d" % (col, r_)]
         c.fill = PatternFill("solid", fgColor=TINT[k])
@@ -120,9 +121,13 @@ for cid in sorted(set(x["cidade"] for x in d), key=lambda c: -sum(1 for x in d i
     L.append("| %s | %s |" % (cid, " | ".join(
         str(sum(1 for x in d if x["cidade"] == cid and c in x["planos"])) for c in CURTOS)))
 L.append("\n## Observações\n")
-L.append("- As **unidades próprias CIM** (Centros Integrados de Medicina) aparecem como tipo de prestador "
-         "separado: CIM Água Verde, CIM CIC, CIM São José dos Pinhais e CIM Araucária. Os profissionais que "
-         "atendem nessas unidades são listados individualmente pela operadora.")
+L.append("- A categoria vem do campo **tipo de estabelecimento** da operadora, não do tipo de prestador. "
+         "É o que separa **hospital geral** (onde a internação acontece) de especializado, e é o que tira "
+         "os **centros de diagnóstico por imagem** de dentro de \"clínica\" — quem procura ressonância "
+         "ou mamografia acha na categoria certa.")
+L.append("- As **unidades próprias CIM** (Centros Integrados de Medicina — Água Verde, CIC, São José dos "
+         "Pinhais e Araucária) aparecem à parte, e os profissionais que atendem nelas são listados "
+         "individualmente pela operadora, como \"médicos dos CIM\".")
 L.append("- O plano **Paraná CIM AHO QC** tem rede mais restrita: aparece em **10 cidades**, contra 17 dos "
          "planos 400 e 600.")
 L.append("- O plano **Paraná 600 AHO QC** é o de rede mais ampla dos três.")
