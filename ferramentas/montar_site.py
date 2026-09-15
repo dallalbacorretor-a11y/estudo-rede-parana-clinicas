@@ -104,6 +104,9 @@ head = troca(head,
              'estão dentro do 400 e do 600.</p>')
 
 head = head.replace("portal da Amil", "portal da Paraná Clínicas")
+# a contagem de medicos do corpo clinico abre a lista no title
+head = troca(head, "</style>",
+             ".equipe{cursor:help;border-bottom:1px dotted currentColor}\n</style>")
 head = troca(head, "A comparação usa a praça filtrada na aba Rede completa.",
              "A comparação usa a cidade filtrada na aba Rede completa.")
 
@@ -163,16 +166,92 @@ app = app.replace('" inteira. Escolha uma praça " +\n'
 app = app.replace('"Rede de " + (D.estado || D.uf) + " inteira.',
                   '"Rede dos três planos em " + (D.estado || D.uf) + ".')
 
-# Os quadros do PDF eram os da Amil: "Pronto-socorro 24h" e "Centros de
-# diagnostico por imagem" nao existem na classificacao da Parana Clinicas e
-# saiam zerados. Entram os numeros que a operadora publica de fato - com as
-# unidades proprias CIM - e quadro zerado nao aparece.
+# ------------------------------------------------- categorias da operadora
+# O app da Amil traz tres categorias no codigo ("Hospitais", "Laboratorios e
+# imagem", "Clinicas e consultorios") e deduz a do prestador contando
+# especialidades. Aqui quem classifica e o build_dados, a partir do campo
+# tipo_estabelecimento da operadora - que separa hospital geral de
+# especializado e tira os centros de imagem de dentro de "Clinica". Entao o
+# app passa a confiar no `cat` que vem no dado, e as listas de categoria
+# passam a sair de D.
+app = troca(app, 'var CAT_EXAME = { "Laboratorios e imagem": 1 };',
+            'var CAT_EXAME = {};   // preenchido por mapearEspecialidadesDeExame')
+app = troca(app,
+            '  function mapearEspecialidadesDeExame() {\n'
+            '    ESP_EXAME = {};\n'
+            '    D.prestadores.forEach(function (p) {\n'
+            '      var lista = p.pc && p.pc["Laboratorios e imagem"];\n'
+            '      (lista || []).forEach(function (e) { ESP_EXAME[e] = 1; });\n'
+            '    });\n'
+            '  }',
+            '  function mapearEspecialidadesDeExame() {\n'
+            '    ESP_EXAME = {};\n'
+            '    CAT_EXAME = {};\n'
+            '    (D.catsExame || []).forEach(function (c) { CAT_EXAME[c] = 1; });\n'
+            '    TIPO_LUGAR = {};\n'
+            '    (D.categorias || []).forEach(function (c) { TIPO_LUGAR[c] = 1; });\n'
+            '    CAT_ELETIVA = {};\n'
+            '    (D.categorias || []).forEach(function (c) {\n'
+            '      if (!/^Hospitais/.test(c)) CAT_ELETIVA[c] = 1;\n'
+            '    });\n'
+            '    D.prestadores.forEach(function (p) {\n'
+            '      Object.keys(CAT_EXAME).forEach(function (c) {\n'
+            '        ((p.pc && p.pc[c]) || []).forEach(function (e) { ESP_EXAME[e] = 1; });\n'
+            '      });\n'
+            '    });\n'
+            '  }')
+app = troca(app,
+            '  var TIPO_LUGAR = { "Hospitais": 1, "Laboratorios e imagem": 1,\n'
+            '                     "Clinicas e consultorios": 1 };',
+            '  var TIPO_LUGAR = {};   // idem')
+app = troca(app,
+            '  var CAT_ELETIVA = { "Laboratorios e imagem": 1,\n'
+            '                      "Clinicas e consultorios": 1 };',
+            '  var CAT_ELETIVA = {};  // idem')
+app = troca(app,
+            '  function tipoDe(p) {\n'
+            '    var c = p.cats || [];\n'
+            '    // pronto-socorro entra aqui junto com hospital: o Hospital de Caridade de\n'
+            '    // Palmeira a Amil classifica so como PS, e ele nao e lugar de exame eletivo\n'
+            '    if (c.indexOf("Hospitais") >= 0 || c.indexOf("Pronto-socorro 24h") >= 0) {\n'
+            '      return "Hospitais";\n'
+            '    }\n'
+            '    var exames = quantos(p, "Laboratorios e imagem");\n'
+            '    var consultas = quantos(p, "Clinicas e consultorios");\n'
+            '    if (exames > consultas) return "Laboratorios e imagem";\n'
+            '    if (consultas > 0) return "Clinicas e consultorios";\n'
+            '    if (exames > 0) return "Laboratorios e imagem";\n'
+            '    return null;\n'
+            '  }',
+            '  function tipoDe(p) {\n'
+            '    return p.cat || null;   // quem classifica e o build_dados\n'
+            '  }')
+# hospital geral e especializado: os dois valem a ressalva de "so internado"
+app = app.replace(
+    '    var c = p.cats || [];\n'
+    '    return c.indexOf("Hospitais") >= 0 || c.indexOf("Pronto-socorro 24h") >= 0;',
+    '    return /^Hospitais/.test(tipoDe(p) || "");')
+
+# quadros do PDF: os da Amil ("Pronto-socorro 24h", "Centros de diagnostico por
+# imagem") nao existem aqui e saiam zerados
 app = troca(app,
             '    var hosp = daCategoria("Hospitais");\n'
-            '    var ps = daCategoria("Pronto-socorro 24h");',
-            '    var hosp = daCategoria("Hospitais");\n'
-            '    var cim = daCategoria("Unidades próprias (CIM)");\n'
-            '    var ps = daCategoria("Pronto-socorro 24h");')
+            '    var ps = daCategoria("Pronto-socorro 24h");\n'
+            '    var pa = daCategoria("Pronto atendimento");\n'
+            '    var lab = daCategoria("Laboratorios e imagem");\n'
+            '    var hemo = daCategoria("Hemodialise");\n'
+            '    var tea = daCategoria("TEA");\n'
+            '    var tele = daCategoria("Telemedicina");\n'
+            '    var cons = daCategoria("Clinicas e consultorios");',
+            '    var hospG = daCategoria("Hospitais gerais");\n'
+            '    var hospE = daCategoria("Hospitais especializados");\n'
+            '    var cim = daCategoria("Unidades próprias CIM");\n'
+            '    var medCim = daCategoria("Médicos dos CIM");\n'
+            '    var imagem = daCategoria("Diagnóstico por imagem");\n'
+            '    var lab = daCategoria("Laboratórios e análises clínicas");\n'
+            '    var terapias = daCategoria("Terapias");\n'
+            '    var cons = daCategoria("Clínicas e policlínicas")\n'
+            '                 .concat(daCategoria("Consultórios"));')
 app = troca(app,
             '    rel.numeros([\n'
             '      [hosp.length, "Hospitais para internação"],\n'
@@ -183,12 +262,125 @@ app = troca(app,
             '      [lista.length, "Prestadores no total"]\n'
             '    ]);',
             '    rel.numeros([\n'
-            '      [hosp.length, "Hospitais"],\n'
-            '      [cim.length, "Unidades próprias CIM"],\n'
-            '      [lab.length, "Laboratórios e imagem"],\n'
+            '      [hospG.length, "Hospitais gerais"],\n'
+            '      [hospE.length, "Hospitais especializados"],\n'
+            '      [imagem.length, "Centros de diagnóstico por imagem"],\n'
+            '      [lab.length, "Laboratórios de análises clínicas"],\n'
+            '      [cim.length + medCim.length, "Atendimento nos CIM"],\n'
             '      [cons.length, "Clínicas e consultórios"],\n'
             '      [lista.length, "Prestadores no total"]\n'
             '    ].filter(function (n) { return n[0]; }));')
+
+# secoes do PDF: pelas categorias da operadora, e os grupos de exame passam a
+# ser as proprias categorias (antes eram regex sobre nomes de exame da Amil,
+# que nao batem com o vocabulario daqui)
+app = troca(app,
+            '    secao("Hospitais para internação", hosp);\n'
+            '    secao("Pronto-socorro 24 horas", ps);\n'
+            '    secao("Pronto atendimento", pa);',
+            '    secao("Hospitais gerais", hospG);\n'
+            '    secao("Hospitais especializados", hospE);\n'
+            '    secao("Unidades próprias CIM", cim);')
+app = troca(app,
+            '    var nomesGrupo = ["Análises clínicas e patologia", "Diagnóstico por imagem",\n'
+            '                      "Exames funcionais", "Endoscopia e procedimentos",\n'
+            '                      "Oncologia", "Outros exames"];',
+            '    var nomesGrupo = (D.catsExame || []).slice();')
+app = troca(app,
+            '    secao("Hemodiálise", hemo);\n'
+            '    secao("TEA — transtorno do espectro autista", tea);\n'
+            '    secao("Telemedicina", tele);',
+            '    secao("Terapias", terapias);\n'
+            '    secao("Médicos que atendem nos CIM", medCim);')
+app = troca(app,
+            '    var porGrupo = {};\n'
+            '    lab.forEach(function (p) {\n'
+            '      p.esp.forEach(function (e) {\n'
+            '        var g = grupoExame(e);\n'
+            '        porGrupo[g] = porGrupo[g] || {};\n'
+            '        if (!porGrupo[g][p.n]) {\n'
+            '          var q = {}; for (var k in p) q[k] = p[k];\n'
+            '          q.esp = [];\n'
+            '          porGrupo[g][p.n] = q;\n'
+            '        }\n'
+            '        porGrupo[g][p.n].esp.push(e);\n'
+            '      });\n'
+            '    });',
+            '    var porGrupo = {};\n'
+            '    (D.catsExame || []).forEach(function (g) {\n'
+            '      daCategoria(g).forEach(function (p) {\n'
+            '        porGrupo[g] = porGrupo[g] || {};\n'
+            '        porGrupo[g][p.n] = p;\n'
+            '      });\n'
+            '    });')
+app = troca(app,
+            '    var nAnalises = contarCentros("Análises clínicas e patologia");\n'
+            '    var nImagem = contarCentros("Diagnóstico por imagem");',
+            '')
+
+# Quadros do panorama: passam a contar pelas categorias novas. "Onde se
+# interna" e a pergunta que o cliente faz, entao hospital geral ganha quadro
+# proprio; os CIM tambem, porque sao o diferencial da operadora.
+app = troca(app,
+            '    var hospitais = lista.filter(function (p) {\n'
+            '      return tipoDe(p) === "Hospitais";\n'
+            '    }).length;\n'
+            '    var exames = lista.filter(function (p) {\n'
+            '      return tipoDe(p) === "Laboratorios e imagem";\n'
+            '    }).length;\n'
+            '    var consultorios = lista.filter(function (p) {\n'
+            '      return tipoDe(p) === "Clinicas e consultorios";\n'
+            '    }).length;',
+            '    function daCat() {\n'
+            '      var quais = Array.prototype.slice.call(arguments);\n'
+            '      return lista.filter(function (p) {\n'
+            '        return quais.indexOf(tipoDe(p)) >= 0;\n'
+            '      }).length;\n'
+            '    }\n'
+            '    var hospitais = daCat("Hospitais gerais");\n'
+            '    var hospEsp = daCat("Hospitais especializados");\n'
+            '    var imagem = daCat("Diagnóstico por imagem");\n'
+            '    var exames = daCat("Laboratórios e análises clínicas",\n'
+            '                       "Exames e procedimentos", "Oncologia");\n'
+            '    var cim = daCat("Unidades próprias CIM", "Médicos dos CIM");\n'
+            '    var consultorios = daCat("Clínicas e policlínicas", "Consultórios",\n'
+            '                             "Terapias");')
+app = troca(app,
+            '    $("panNumeros").innerHTML = [\n'
+            '      [lista.length, "prestadores"],\n'
+            '      [cidades.length, cidades.length === 1 ? "cidade" : "cidades"],\n'
+            '      [hospitais, "hospitais"],\n'
+            '      [exames, "exames e laboratórios"],\n'
+            '      [consultorios, "clínicas e consultórios"]\n'
+            '    ].map(function (n) {',
+            '    $("panNumeros").innerHTML = [\n'
+            '      [lista.length, "prestadores"],\n'
+            '      [cidades.length, cidades.length === 1 ? "cidade" : "cidades"],\n'
+            '      [hospitais, "hospitais gerais"],\n'
+            '      [hospEsp, "hospitais especializados"],\n'
+            '      [imagem, "centros de imagem"],\n'
+            '      [exames, "laboratórios e exames"],\n'
+            '      [cim, "atendimento nos CIM"],\n'
+            '      [consultorios, "clínicas e consultórios"]\n'
+            '    ].filter(function (n) { return n[0]; }).map(function (n) {')
+
+# A Parana Clinicas devolve o campo de acreditacoes VAZIO em todos os
+# prestadores, entao a marca ACRED. nunca apareceria - prometer uma legenda que
+# nao existe e pior que nao ter legenda.
+app = troca(app,
+            '    if (hosp.length) {\n'
+            '      rel.titulo("Principais referências hospitalares",\n'
+            '        "Os hospitais de maior cobertura na sua rede. A marca ACRED. indica " +\n'
+            '        "programa de acreditação reconhecido pela operadora.");\n'
+            '      rel.referencias(hosp.slice(0, 10));\n'
+            '    }',
+            '    var refs = hospG.concat(hospE);\n'
+            '    if (refs.length) {\n'
+            '      rel.titulo("Principais referências hospitalares",\n'
+            '        "Os hospitais de maior cobertura na sua rede — os gerais primeiro, '
+            'que são onde a internação acontece.");\n'
+            '      rel.referencias(refs.slice(0, 10));\n'
+            '    }')
 
 # Aqui os tres planos sao de uma linha so, entao colorir pela linha pintaria
 # tudo de vermelho. Cada plano ganha sua cor - a mesma no cartao, na coluna da
@@ -217,6 +409,45 @@ app = troca(app, 'cor: aux.COR_LINHA[produto.linha] || "#20456f",',
             'cor: produto.cor || aux.COR_LINHA[produto.linha] || "#8e0e28",')
 app = troca(app, 'cor: aux.COR_LINHA[prodA ? prodA.linha : "PME/PJ"] || "#20456f",',
             'cor: (prodA && prodA.cor) || "#8e0e28",')
+
+# ------------------------------------- dados que a operadora publica e o app
+# da Amil nao tinha onde mostrar: e-mail, acessibilidade e corpo clinico.
+# Buscar pelo nome do medico e o caso real do corretor - "meu cliente quer o
+# Dr. Fulano, onde ele atende?".
+app = troca(app,
+            '      if (q && semAcento(p.n).indexOf(q) < 0 && (p.c || "").indexOf(q) < 0) {\n'
+            '        return false;\n'
+            '      }',
+            '      if (q && semAcento(p.n).indexOf(q) < 0 && (p.c || "").indexOf(q) < 0 &&\n'
+            '          !(p.eq || []).some(function (m) {\n'
+            '            return semAcento(m[0]).indexOf(q) >= 0;\n'
+            '          })) {\n'
+            '        return false;\n'
+            '      }', 2)   # a aba Rede completa e a aba Entre planos
+app = troca(app,
+            '           \'<div class="miudo">\' + esc(p.t.join(" · ")) + "</div></td>";',
+            '           \'<div class="miudo">\' + esc(p.t.join(" · ")) +\n'
+            '           (p.mail && p.mail.length\n'
+            '             ? " · " + esc(p.mail[0]) : "") +\n'
+            '           (p.acess ? \' · <span title="Prestador com acessibilidade \'\n'
+            '                      + \'declarada à operadora">acessível</span>\' : "") +\n'
+            '           (p.eq && p.eq.length\n'
+            '             ? \'<span class="equipe" title="\' +\n'
+            '               esc(p.eq.slice(0, 14).map(function (m) {\n'
+            '                 return m[0] + (m[2] ? " — " + m[2] : "");\n'
+            '               }).join("\\n")) + (p.eq.length > 14 ? "\\n…" : "") +\n'
+            '               \'"> · equipe de \' + p.eq.length + \' médicos</span>\'\n'
+            '             : "") + "</div></td>";')
+
+# Por ultimo, o que sobrou de "=== Hospitais" espalhado pelas contagens
+# (cartao do plano, bolha do mapa, "hospitais que saem" da aba Entre planos).
+# Depois dos blocos acima, senao esta troca os desfiguraria antes da hora.
+for _de, _para in (('tipoDe(p) === "Hospitais"', '/^Hospitais/.test(tipoDe(p) || "")'),
+                   ('tipoDe(p) !== "Hospitais"', '!/^Hospitais/.test(tipoDe(p) || "")')):
+    if _de not in app:
+        raise SystemExit("nao achei mais: " + _de)
+    trocas += app.count(_de)
+    app = app.replace(_de, _para)
 
 # =============================================================== 3) o PDF
 lib = troca(lib, 'window.ORDEM_UF=["PR", "SC", "SP"];', 'window.ORDEM_UF=["PR"];')

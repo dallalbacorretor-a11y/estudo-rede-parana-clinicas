@@ -30,17 +30,18 @@ def estiliza(ws, ncols, larguras):
             cell.font = Font(size=9)
             cell.border = BORD
 
-COLS = ["Categoria", "Tipo", "Prestador", "Especialidades", "Cidade", "Bairro",
-        "Endereço", "CEP", "Telefone", "Telefone 2"]
-LARG = [22, 18, 42, 46, 20, 22, 44, 12, 16, 16]
+COLS = ["Categoria", "Tipo (operadora)", "Prestador", "CNPJ", "Especialidades",
+        "Cidade", "Bairro", "Endereço", "CEP", "Telefone", "Telefone 2", "E-mail"]
+LARG = [26, 30, 42, 20, 46, 20, 22, 44, 12, 16, 16, 32]
 
 def sheet_rede(ws, dados):
     ws.append(COLS)
     dados = sorted(dados, key=lambda r: (ORDEM_CAT.index(r["categoria"]) if r["categoria"] in ORDEM_CAT else 99,
                                          r["cidade"], norm(r["nome"]), r["bairro"]))
     for r in dados:
-        ws.append([r["categoria"], r["tipo"], r["nome"], r["esp"], r["cidade"], r["bairro"],
-                   r["endereco"], r["cep"], r["tel"], r["tel2"]])
+        ws.append([r["categoria"], r["tipo"], r["nome"], r["cnpj"], r["esp"],
+                   r["cidade"], r["bairro"], r["endereco"], r["cep"],
+                   r["tel"], r["tel2"], r["email"]])
     estiliza(ws, len(COLS), LARG)
 
 # ---- 1) um xlsx por plano

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-"""Monta o DADOS_UF da Parana Clinicas no mesmo formato do site da Amil."""
-import sys, os, json, re, unicodedata
+"""Monta o DADOS_UF da Parana Clinicas no formato que a pagina consome."""
+import sys, os, json, re
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _local  # noqa: F401  (fixa o diretorio de trabalho)
-from common import norm
+from common import (norm, LUGAR, CATEGORIAS, CATS_EXAME, CIM_UNIDADE, PADRAO)
 
 HOJE = "12/09/2026"
 
@@ -20,17 +20,14 @@ PRODUTOS = [
 ]
 COD = {"236": "p400", "237": "p600", "234": "cim"}
 
-# O app classifica prestador por estes nomes exatos (sem acento, como a Amil
-# publica) - mudar a grafia quebra o panorama e as secoes do PDF. O CIM entra
-# como categoria extra E como clinica, para ser filtravel sem perder a logica.
-CLINICA = "Clinicas e consultorios"
-CIM = "Unidades próprias (CIM)"
-CAT = {"1": ["Hospitais"], "2": [CLINICA], "3": [CLINICA],
-       "4": [CIM, CLINICA], "5": [CIM, CLINICA], "6": [CIM, CLINICA],
-       "7": [CIM, CLINICA], "8": ["Laboratorios e imagem"]}
-CATEGORIAS = ["Hospitais", CIM, CLINICA, "Laboratorios e imagem"]
+# As categorias, a ordem e o mapa de tipo_estabelecimento vivem no common:
+# a pagina e os arquivos de escritorio precisam classificar igual.
 
 det = json.load(open("dados/detalhes.json", encoding="utf-8"))
+espf = json.load(open("dados/esp_full.json", encoding="utf-8")) \
+    if os.path.exists("dados/esp_full.json") else {}
+cc = json.load(open("dados/corpo_clinico.json", encoding="utf-8")) \
+    if os.path.exists("dados/corpo_clinico.json") else {}
 
 
 def num(v):
@@ -65,33 +62,70 @@ def ender(r):
     return (p + (", " + n if n else "")).upper()
 
 
-# ---------------------------------------------------------------- 1) linhas
-# Uma linha por (prestador, endereco). Cada uma sabe em que planos aparece.
+def parte_esp(txt):
+    """Separa 'A, B, C' sem quebrar dentro de parenteses."""
+    return [s.strip().upper() for s in re.split(r",(?![^(]*\))", txt or "") if s.strip()]
+
+
+# ------------------------------------------------------ 1) junta os 3 planos
+# Uma linha por (prestador, endereco); cada uma sabe em que planos aparece e
+# quais ids a representam (o id muda de plano para plano).
 linhas = {}
 for cod, prod in COD.items():
     for r in json.load(open("dados/rede2_%s.json" % cod, encoding="utf-8")):
         k = (norm(r.get("nome")), norm(r.get("endereco")),
              (r.get("numero") or "").strip(), (r.get("cep") or "").strip())
-        d = det.get(str(r["id"]), {})
         e = linhas.get(k)
         if not e:
-            esp = (d.get("especialidade") or r.get("esp") or "").strip()
-            if "[...]" in esp:
-                esp = (r.get("esp") or "").strip()
-            e = linhas[k] = {
-                "nome": (r.get("nome") or "").strip().upper(),
-                "cnpj": cnpj_fmt(d.get("cpf_cnpj")),
-                "cidade": (r.get("_cidade") or d.get("nome_cidade") or "").upper(),
-                "bairro": (r.get("bairro") or "").strip().upper(),
-                "end": ender(r),
-                "tels": [t for t in (fone(r.get("tel")), fone(r.get("tel_sec"))) if t],
-                "cats": CAT.get(r.get("_classe"), [CLINICA]),
-                "tipo": r.get("_tipo", ""),
-                "esp": [s.strip().upper() for s in re.split(r",(?![^(]*\))", esp) if s.strip()],
-                "xy": [num(r.get("lat")), num(r.get("lon"))],
-                "planos": set(),
-            }
+            e = linhas[k] = {"rows": [], "ids": [], "planos": set()}
+        e["rows"].append(r)
+        e["ids"].append(r["id"])
         e["planos"].add(prod)
+
+for k, e in linhas.items():
+    r = e["rows"][0]
+    # o detalhe foi coletado para UM id por endereco; aceita qualquer um deles
+    rid = next((str(i) for i in e["ids"] if str(i) in det), None)
+    d = det.get(rid, {}) if rid else {}
+
+    # especialidades: a lista completa vem de listaEspecialidadesPrestador,
+    # que devolve por endereco; buscaRede e detalhePrestador cortam com [...]
+    esp = []
+    if rid and rid in espf:
+        alvo = (norm(r.get("endereco")), (r.get("numero") or "").strip())
+        esp = [x["e"].upper() for x in espf[rid]
+               if (norm(x.get("end")), (x.get("num") or "").strip()) == alvo]
+    if not esp and rid in espf:
+        # alguns enderecos da busca nao constam na lista por endereco (a
+        # operadora nao cadastrou); melhor a lista inteira do CNPJ do que o
+        # texto cortado com [...]
+        esp = [x["e"].upper() for x in espf[rid]]
+    if not esp:
+        txt = (d.get("especialidade") or "").strip()
+        if "[...]" in txt or not txt:
+            txt = (r.get("esp") or "").strip()
+        esp = parte_esp(txt)
+
+    tipo_est = (d.get("tipo_estabelecimento") or "").strip()
+    lugar = LUGAR.get(tipo_est, PADRAO)
+    cats = [lugar]
+    unidade = CIM_UNIDADE.get(r.get("_classe"))
+    if unidade:
+        cats.append(unidade)
+
+    e.update({
+        "nome": (r.get("nome") or "").strip().upper(),
+        "cnpj": cnpj_fmt(d.get("cpf_cnpj")),
+        "cidade": (r.get("_cidade") or d.get("nome_cidade") or "").upper(),
+        "bairro": (r.get("bairro") or "").strip().upper(),
+        "end": ender(r),
+        "tels": [t for t in (fone(r.get("tel")), fone(r.get("tel_sec"))) if t],
+        "email": (d.get("email") or "").strip().lower(),
+        "acess": (d.get("acessibilidade") or "") == "S",
+        "lugar": lugar, "cats": cats, "tipo_est": tipo_est,
+        "esp": sorted(set(esp), key=esp.index),
+        "xy": [num(r.get("lat")), num(r.get("lon"))],
+    })
 
 # ------------------------------------------------- 2) agrupa por prestador
 # Chave: CNPJ quando existe (junta as varias unidades da mesma empresa);
@@ -103,7 +137,8 @@ for e in linhas.values():
     if not g:
         g = grupos[k] = {"n": e["nome"], "c": e["cnpj"], "cid": set(), "pp": {},
                          "b": set(), "e": set(), "t": set(), "p": set(),
-                         "cats": set(), "pc": {}, "xy": None, "_cat": {}}
+                         "mail": set(), "acess": False,
+                         "cats": set(), "pc": {}, "xy": None}
     g["cid"].add(e["cidade"])
     g["pp"].setdefault(e["cidade"], set()).update(e["planos"])
     if e["bairro"]:
@@ -111,11 +146,13 @@ for e in linhas.values():
     if e["end"]:
         g["e"].add(e["end"])
     g["t"].update(e["tels"])
+    if e["email"]:
+        g["mail"].add(e["email"])
+    g["acess"] = g["acess"] or e["acess"]
     g["p"].update(e["planos"])
     for c in e["cats"]:
         g["cats"].add(c)
         g["pc"].setdefault(c, set()).update(e["esp"])
-        g["_cat"][c] = g["_cat"].get(c, 0) + 1
     if g["xy"] is None and e["xy"][0] is not None:
         g["xy"] = e["xy"]
 
@@ -127,45 +164,31 @@ def ord_p(s):
     return sorted(s, key=lambda x: ordem_prod.index(x))
 
 
-def tipo_de(cats, pc):
-    """Mesma regra do app: hospital manda; fora isso vale o que ele mais oferece.
-    Precisa bater com a do JS, senao a tabela repete a faixa de categoria."""
-    if "Hospitais" in cats:
-        return "Hospitais"
-    exames = len(pc.get("Laboratorios e imagem", ()))
-    consultas = len(pc.get(CLINICA, ()))
-    if exames > consultas:
-        return "Laboratorios e imagem"
-    if consultas > 0:
-        return CLINICA
-    if exames > 0:
-        return "Laboratorios e imagem"
-    return CLINICA
-
-
 prestadores = []
-for g in grupos.values():
-    # Categoria principal: a mais "forte" (hospital ganha de clinica) e, em
-    # empate, a que aparece em mais enderecos.
-    cat = tipo_de(g["cats"], g["pc"])
-    esp = sorted(set().union(*g["pc"].values())) if g["pc"] else []
-    # o CIM nao pode ser a categoria principal: o app so entende as tres da Amil
+for cnpj, g in grupos.items():
+    lugares = [c for c in g["cats"] if c in ordem_cat] or [PADRAO]
+    cat = sorted(lugares, key=lambda c: ordem_cat[c])[0]
+    # o corpo clinico foi salvo com o CNPJ cru; a chave do grupo e formatada
+    equipe = cc.get(re.sub(r"\D", "", cnpj)) or []
     prestadores.append({
         "n": g["n"], "c": g["c"],
         "cid": sorted(g["cid"]),
         "pp": {k: ord_p(v) for k, v in sorted(g["pp"].items())},
         "cr": sorted(g["cid"]),
         "b": sorted(g["b"]), "e": sorted(g["e"]), "t": sorted(g["t"]),
+        "mail": sorted(g["mail"]),
+        "acess": g["acess"],
+        "eq": [[x["n"], x["cr"], x["e"]] for x in equipe],
         "p": ord_p(g["p"]),
         "cat": cat,
         "cats": sorted(g["cats"], key=lambda c: ordem_cat.get(c, 99)),
-        "esp": esp,
+        "esp": sorted(set().union(*g["pc"].values())) if g["pc"] else [],
         "pc": {k: sorted(v) for k, v in sorted(g["pc"].items())},
         "s": [],
         "xy": g["xy"] or [None, None],
     })
-# a tabela insere a faixa quando a categoria muda de uma linha para a
-# outra - sem ordenar por categoria, a faixa se repete pagina afora
+# a tabela insere a faixa quando a categoria muda de uma linha para a outra -
+# sem ordenar por categoria, a faixa se repete pagina afora
 prestadores.sort(key=lambda p: (ordem_cat.get(p["cat"], 99), norm(p["n"])))
 
 # ----------------------------------------------- 3) centros (bairro|cidade)
@@ -187,18 +210,28 @@ dados = {"PR": {
     "nota": "",
     "produtos": PRODUTOS,
     "categorias": CATEGORIAS,
+    "catsExame": CATS_EXAME,
     "prestadores": prestadores,
 }}
 json.dump(dados, open("dados/dados_pc.json", "w", encoding="utf-8"),
           ensure_ascii=False, separators=(",", ":"))
 
-sem_cnpj = len([p for p in prestadores if not p["c"]])
-sem_xy = len([p for p in prestadores if p["xy"][0] is None])
-print("linhas (prestador+endereco):", len(linhas))
-print("prestadores agrupados:", len(prestadores), "| sem CNPJ:", sem_cnpj, "| sem coordenada:", sem_xy)
-print("centros (bairros):", len(centros))
-for p in PRODUTOS:
-    print("  %-12s %d prestadores" % (p["rotulo"], len([x for x in prestadores if p["codigo"] in x["p"]])))
 from collections import Counter
-print(Counter(p["cat"] for p in prestadores))
+print("linhas (prestador+endereco):", len(linhas))
+print("prestadores agrupados:", len(prestadores),
+      "| sem CNPJ:", len([p for p in prestadores if not p["c"]]),
+      "| sem coordenada:", len([p for p in prestadores if p["xy"][0] is None]))
+print("sem tipo_estabelecimento:", len([e for e in linhas.values() if not e["tipo_est"]]))
+print("com e-mail:", len([p for p in prestadores if p["mail"]]),
+      "| com equipe medica:", len([p for p in prestadores if p["eq"]]),
+      "| acessibilidade:", len([p for p in prestadores if p["acess"]]))
+print("especialidades truncadas restantes:",
+      len([p for p in prestadores for e in p["esp"] if "[...]" in e]))
+for p in PRODUTOS:
+    print("  %-12s %d prestadores" % (p["rotulo"],
+          len([x for x in prestadores if p["codigo"] in x["p"]])))
+for c in CATEGORIAS:
+    n = len([p for p in prestadores if p["cat"] == c])
+    if n:
+        print("  %-34s %d" % (c, n))
 print("cidades:", len(set(c for p in prestadores for c in p["cid"])))
