@@ -279,10 +279,12 @@ def pagina_abertura(resumo):
                                    for k in CURTOS) +
                         " — a mesma cor dos cartões na página de consulta.", cb),
               Paragraph("O prestador não apareceu na busca oficial daquele plano "
-                        "na data desta consulta.", cb)]]
+                        "na data desta consulta.<br/><b>D</b> no lugar do visto: "
+                        "atende por <b>direcionamento interno</b> — o acesso "
+                        "depende de encaminhamento da operadora.", cb)]]
     tc = Table(cards, colWidths=[(PW - 24 * mm - 2 * 6 * mm) / 3.0] * 3,
                rowHeights=[13, 30], colWidths2=None) if False else \
-        Table(cards, colWidths=[(PW - 24 * mm - 12 * mm) / 3.0] * 3, rowHeights=[13, 30])
+        Table(cards, colWidths=[(PW - 24 * mm - 12 * mm) / 3.0] * 3, rowHeights=[13, 42])
     tc.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#fdf7f8")),
         ("LINEABOVE", (0, 0), (0, 0), 2, CORES["400 QP"]),
@@ -376,10 +378,16 @@ def tabela(linhas):
             end = Paragraph("%s<br/><font size=6.3 color='#66707f'>%s</font>"
                             % (esc(bonito(d["endereco"])), esc(d["cep"])), st_cel)
             row = [celula_nome(d), cid, end, celula_contato(d)]
+            dirs = d.get("dir") or []
             for k in CURTOS:
-                row.append(Paragraph(
-                    "<font color='%s'>✓</font>" % HEX[k] if k in d["planos"]
-                    else "<font color='#c9ccd2'>–</font>", st_chk))
+                if k in dirs:
+                    # direcionamento interno: D no lugar do visto
+                    marca = "<font size=8 color='%s'><b>D</b></font>" % HEX[k]
+                elif k in d["planos"]:
+                    marca = "<font color='%s'>✓</font>" % HEX[k]
+                else:
+                    marca = "<font color='#c9ccd2'>–</font>"
+                row.append(Paragraph(marca, st_chk))
             data.append(row)
             if zebra % 2:
                 style.append(("BACKGROUND", (0, r), (3, r), ZEBRA))

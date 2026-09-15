@@ -3,7 +3,7 @@
 import os, sys, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _local  # noqa: F401  (fixa o diretorio de trabalho)
-from common import PLANOS, ORDEM_CAT, carrega, norm
+from common import PLANOS, ORDEM_CAT, carrega, norm, planos_direcionados
 
 def concilia():
     reg = {}
@@ -19,7 +19,12 @@ def concilia():
                 e["inst"] = e.get("inst") or r.get("inst")
             e["planos"].add(curto)
     out = list(reg.values())
-    for e in out: e["planos"] = sorted(e["planos"], key=lambda x: [p[2] for p in PLANOS].index(x))
+    ordem = [p[2] for p in PLANOS]
+    for e in out:
+        # o hospital de direcionamento não consta na busca daquele plano, mas é
+        # acessível: entra na lista do plano e fica marcado com (D)
+        e["dir"] = planos_direcionados(e.get("cnpj"))
+        e["planos"] = sorted(set(e["planos"]) | set(e["dir"]), key=ordem.index)
     return out
 
 if __name__ == "__main__":

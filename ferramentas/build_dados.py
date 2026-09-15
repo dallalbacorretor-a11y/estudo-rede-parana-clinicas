@@ -3,8 +3,8 @@
 import sys, os, json, re
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _local  # noqa: F401  (fixa o diretorio de trabalho)
-from common import (norm, cidade_bonita, LUGAR, CATEGORIAS, CATS_EXAME,
-                    CIM_UNIDADE, PADRAO)
+from common import (norm, cidade_bonita, planos_direcionados, LUGAR,
+                    CATEGORIAS, CATS_EXAME, CIM_UNIDADE, PADRAO)
 
 HOJE = "12/09/2026"
 
@@ -158,6 +158,7 @@ for e in linhas.values():
         g["xy"] = e["xy"]
 
 ordem_prod = [p["codigo"] for p in PRODUTOS]
+CURTO_COD = {"400 QP": "p400", "600 QC": "p600", "CIM QC": "cim"}
 ordem_cat = {c: i for i, c in enumerate(CATEGORIAS)}
 
 
@@ -171,16 +172,21 @@ for cnpj, g in grupos.items():
     cat = sorted(lugares, key=lambda c: ordem_cat[c])[0]
     # o corpo clinico foi salvo com o CNPJ cru; a chave do grupo e formatada
     equipe = cc.get(re.sub(r"\D", "", cnpj)) or []
+    # direcionamento interno: o hospital nao consta na busca daquele plano, mas
+    # e acessivel por encaminhamento - entra no plano, marcado com (D)
+    dirs = [CURTO_COD[c] for c in planos_direcionados(cnpj)]
+    planos = ord_p(set(g["p"]) | set(dirs))
     prestadores.append({
         "n": g["n"], "c": g["c"],
         "cid": sorted(g["cid"]),
-        "pp": {k: ord_p(v) for k, v in sorted(g["pp"].items())},
+        "pp": {k: ord_p(set(v) | set(dirs)) for k, v in sorted(g["pp"].items())},
         "cr": sorted(g["cid"]),
         "b": sorted(g["b"]), "e": sorted(g["e"]), "t": sorted(g["t"]),
         "mail": sorted(g["mail"]),
         "acess": g["acess"],
         "eq": [[x["n"], x["cr"], x["e"]] for x in equipe],
-        "p": ord_p(g["p"]),
+        "p": planos,
+        "dir": dirs,
         "cat": cat,
         "cats": sorted(g["cats"], key=lambda c: ordem_cat.get(c, 99)),
         "esp": sorted(set().union(*g["pc"].values())) if g["pc"] else [],

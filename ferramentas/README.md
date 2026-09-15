@@ -51,6 +51,22 @@ repositório). O que vale lembrar:
   quem resolve é `listaEspecialidadesPrestador`, que **exige `cpfCnpj`** e devolve
   a lista inteira, endereço por endereço.
 
+## Direcionamento interno — `dados/direcionamento.json`
+
+O único arquivo **editado à mão**. Alguns hospitais não aparecem na busca de um
+plano, mas são liberados por **encaminhamento da operadora**; isso não vem da
+API, é conhecimento do corretor.
+
+Marcado ali, o prestador passa a constar naquele plano com **D** no lugar do
+visto — na página, nas planilhas, no comparativo e nos dois PDFs. A chave é o
+CNPJ só com números.
+
+Hoje: Erastinho, Erasto Gaertner e Pequeno Príncipe no **400** e no **CIM**;
+Novaclínica no **CIM**. No **600** os quatro são rede direta, sem D.
+
+Depois de editar, rodar `build_dados.py` + `montar_site.py` (página) e
+`build_comp.py` + os `build_*` / `export_xlsx.py` (planilhas e PDFs).
+
 ### O que a operadora não publica
 
 Levantado e confirmado vazio — não adianta tentar de novo sem aviso deles:
