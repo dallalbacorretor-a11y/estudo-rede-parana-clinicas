@@ -45,22 +45,22 @@ Operadora: Paraná Clínicas (grupo SulAmérica). Abrangência dos três planos:
 | Cidade | 400 QP | 600 QC | CIM QC |
 |---|---|---|---|
 | Curitiba | 348 | 430 | 173 |
-| Sao Jose dos Pinhais | 39 | 45 | 29 |
-| Araucaria | 24 | 24 | 19 |
+| São José dos Pinhais | 39 | 45 | 29 |
+| Araucária | 24 | 24 | 19 |
 | Campo Largo | 16 | 16 | 3 |
 | Pinhais | 7 | 9 | 1 |
-| Piraquara | 3 | 5 | 1 |
 | Colombo | 5 | 6 | 1 |
+| Piraquara | 3 | 5 | 1 |
 | Fazenda Rio Grande | 4 | 4 | 0 |
 | Rio Branco do Sul | 3 | 3 | 1 |
 | Campina Grande do Sul | 2 | 3 | 1 |
+| Almirante Tamandaré | 2 | 2 | 0 |
 | Quatro Barras | 2 | 2 | 0 |
 | Tijucas do Sul | 2 | 2 | 0 |
-| Almirante Tamandaré | 2 | 2 | 0 |
-| Bocaiuva do Sul | 1 | 1 | 0 |
-| Mandirituba | 1 | 1 | 0 |
+| Itaperuçu | 1 | 1 | 1 |
 | Lapa | 1 | 1 | 0 |
-| Itaperucu | 1 | 1 | 1 |
+| Bocaiúva do Sul | 1 | 1 | 0 |
+| Mandirituba | 1 | 1 | 0 |
 
 ## Observações
 
