@@ -8,9 +8,9 @@ Operadora: Paraná Clínicas (grupo SulAmérica). Abrangência dos três planos:
 
 | Plano | Registro ANS | Contratação | Prestadores/endereços |
 |---|---|---|---|
-| Paraná 400 AHO QP COPART SR | 507887263 | Coletivo empresarial | 461 |
+| Paraná 400 AHO QP COPART SR | 507887263 | Coletivo empresarial | 464 |
 | Paraná 600 AHO QC COPART SR | 507885267 | Coletivo empresarial | 555 |
-| Paraná CIM AHO QC COPART SR | 507888261 | Coletivo empresarial | 230 |
+| Paraná CIM AHO QC COPART SR | 507888261 | Coletivo empresarial | 234 |
 
 **Rede consolidada (união dos três): 558 prestadores/endereços.**
 
@@ -18,9 +18,9 @@ Operadora: Paraná Clínicas (grupo SulAmérica). Abrangência dos três planos:
 
 | Atende | Prestadores/endereços |
 |---|---|
-| 400 QP + 600 QC | 230 |
-| 400 QP + 600 QC + CIM QC | 228 |
-| 600 QC | 97 |
+| 400 QP + 600 QC + CIM QC | 232 |
+| 400 QP + 600 QC | 229 |
+| 600 QC | 94 |
 | 400 QP + CIM QC | 2 |
 | 400 QP | 1 |
 
@@ -28,8 +28,8 @@ Operadora: Paraná Clínicas (grupo SulAmérica). Abrangência dos três planos:
 
 | Categoria | 400 QP | 600 QC | CIM QC |
 |---|---|---|---|
-| Hospitais gerais | 10 | 16 | 5 |
-| Hospitais especializados | 8 | 21 | 5 |
+| Hospitais gerais | 11 | 16 | 7 |
+| Hospitais especializados | 10 | 21 | 7 |
 | Unidades próprias CIM | 6 | 6 | 6 |
 | Diagnóstico por imagem | 19 | 22 | 0 |
 | Laboratórios e análises clínicas | 75 | 81 | 0 |
@@ -44,8 +44,8 @@ Operadora: Paraná Clínicas (grupo SulAmérica). Abrangência dos três planos:
 
 | Cidade | 400 QP | 600 QC | CIM QC |
 |---|---|---|---|
-| Curitiba | 348 | 430 | 173 |
-| São José dos Pinhais | 39 | 45 | 29 |
+| Curitiba | 351 | 430 | 176 |
+| São José dos Pinhais | 39 | 45 | 30 |
 | Araucária | 24 | 24 | 19 |
 | Campo Largo | 16 | 16 | 3 |
 | Pinhais | 7 | 9 | 1 |
@@ -54,16 +54,17 @@ Operadora: Paraná Clínicas (grupo SulAmérica). Abrangência dos três planos:
 | Fazenda Rio Grande | 4 | 4 | 0 |
 | Rio Branco do Sul | 3 | 3 | 1 |
 | Campina Grande do Sul | 2 | 3 | 1 |
+| Tijucas do Sul | 2 | 2 | 0 |
 | Almirante Tamandaré | 2 | 2 | 0 |
 | Quatro Barras | 2 | 2 | 0 |
-| Tijucas do Sul | 2 | 2 | 0 |
-| Itaperuçu | 1 | 1 | 1 |
-| Lapa | 1 | 1 | 0 |
-| Bocaiúva do Sul | 1 | 1 | 0 |
 | Mandirituba | 1 | 1 | 0 |
+| Itaperuçu | 1 | 1 | 1 |
+| Bocaiúva do Sul | 1 | 1 | 0 |
+| Lapa | 1 | 1 | 0 |
 
 ## Observações
 
+- **D** na coluna do plano significa **direcionamento interno**: o hospital atende, mas por encaminhamento da operadora, não por acesso livre. Hoje vale para **Erastinho**, **Erasto Gaertner** e **Pequeno Príncipe** no 400 e no CIM, e para o **Novaclínica** no CIM.
 - A categoria vem do campo **tipo de estabelecimento** da operadora, não do tipo de prestador. É o que separa **hospital geral** (onde a internação acontece) de especializado, e é o que tira os **centros de diagnóstico por imagem** de dentro de "clínica" — quem procura ressonância ou mamografia acha na categoria certa.
 - As **unidades próprias CIM** (Centros Integrados de Medicina — Água Verde, CIC, São José dos Pinhais e Araucária) aparecem à parte, e os profissionais que atendem nelas são listados individualmente pela operadora, como "médicos dos CIM".
 - O plano **Paraná CIM AHO QC** tem rede mais restrita: aparece em **10 cidades**, contra 17 dos planos 400 e 600.

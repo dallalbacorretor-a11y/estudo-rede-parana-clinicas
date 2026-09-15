@@ -439,6 +439,56 @@ app = troca(app,
             '               \'"> · equipe de \' + p.eq.length + \' médicos</span>\'\n'
             '             : "") + "</div></td>";')
 
+# ---------------------------------------------------- direcionamento interno
+# Alguns hospitais nao constam na busca daquele plano mas sao liberados por
+# encaminhamento. Marcar com D, e nao com o visto, e o que evita prometer
+# acesso direto (ver dados/direcionamento.json).
+app = troca(app, '             (tem ? "&#10003;" : "") + "</td>";',
+            '             (tem\n'
+            '               ? ((p.dir || []).indexOf(c.codigo) >= 0\n'
+            '                   ? \'<abbr class="dir" title="Atende por direcionamento \'\n'
+            '                     + \'interno da operadora: o acesso depende de \'\n'
+            '                     + \'encaminhamento, não é livre.">D</abbr>\'\n'
+            '                   : "&#10003;")\n'
+            '               : "") + "</td>";')
+head = troca(head, ".equipe{cursor:help;border-bottom:1px dotted currentColor}",
+             ".equipe{cursor:help;border-bottom:1px dotted currentColor}\n"
+             ".prod .dir{font:700 11px/1 inherit;text-decoration:none;cursor:help;"
+             "border:1px solid currentColor;border-radius:3px;padding:0 3px}")
+head = troca(head,
+             'por isso Paraná 400 AHO QC e Paraná 600 AHO QP não aparecem à parte, '
+             'estão dentro do 400 e do 600.</p>',
+             'por isso Paraná 400 AHO QC e Paraná 600 AHO QP não aparecem à parte, '
+             'estão dentro do 400 e do 600. <b>D</b> na coluna do plano significa '
+             '<b>direcionamento interno</b>: o hospital atende, mas por '
+             'encaminhamento da operadora, não por acesso livre.</p>')
+
+# no PDF, D no lugar do visto (mesma regra)
+lib = troca(lib,
+            '          if (tem) {\n'
+            '            // circulo em volta do visto, como no material impresso\n'
+            '            p.circulo(x + cols[ci].l / 2, topo + 1.2, 6.2, corPr, true, 0.9);\n'
+            '            visto(p, x + cols[ci].l / 2, topo + 0.2, corPr);\n'
+            '          } else {',
+            '          if (tem) {\n'
+            '            // circulo em volta do visto, como no material impresso\n'
+            '            p.circulo(x + cols[ci].l / 2, topo + 1.2, 6.2, corPr, true, 0.9);\n'
+            '            if ((item.dir || []).indexOf(pr.codigo) >= 0) {\n'
+            '              // direcionamento interno: D no lugar do visto\n'
+            '              p.texto(x + cols[ci].l / 2 - p.larguraTexto("D", "sansB", 7) / 2,\n'
+            '                      topo - 1.3, "D", "sansB", 7, corPr);\n'
+            '            } else {\n'
+            '              visto(p, x + cols[ci].l / 2, topo + 0.2, corPr);\n'
+            '            }\n'
+            '          } else {')
+app = troca(app,
+            'var aviso = "Cada plano deste material representa uma rede: enfermaria (QC) " +\n'
+            '      "e apartamento (QP) compartilham a mesma rede credenciada. " +',
+            'var aviso = "Cada plano deste material representa uma rede: enfermaria (QC) " +\n'
+            '      "e apartamento (QP) compartilham a mesma rede credenciada. " +\n'
+            '      "O D no lugar do visto marca direcionamento interno: o hospital " +\n'
+            '      "atende, mas por encaminhamento da operadora, não por acesso livre. " +')
+
 # Por ultimo, o que sobrou de "=== Hospitais" espalhado pelas contagens
 # (cartao do plano, bolha do mapa, "hospitais que saem" da aba Entre planos).
 # Depois dos blocos acima, senao esta troca os desfiguraria antes da hora.

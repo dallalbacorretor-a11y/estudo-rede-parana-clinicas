@@ -10,7 +10,8 @@ from openpyxl.utils import get_column_letter
 BASE = _local.RAIZ
 D1 = os.path.join(BASE, "01 - REDE CREDENCIADA", "Paraná Clínicas")
 D2 = os.path.join(BASE, "02 - COMPARATIVOS DE REDE")
-VERDE = "1F6B4E"; CINZA = "F2F2F2"
+# vermelho da operadora, igual a pagina e aos PDFs
+MARCA = "8E0E28"; CINZA = "F2F2F2"
 thin = Side(style="thin", color="D9D9D9")
 BORD = Border(left=thin, right=thin, top=thin, bottom=thin)
 
@@ -18,7 +19,7 @@ def estiliza(ws, ncols, larguras):
     for c in range(1, ncols+1):
         cell = ws.cell(row=1, column=c)
         cell.font = Font(bold=True, color="FFFFFF", size=10)
-        cell.fill = PatternFill("solid", fgColor=VERDE)
+        cell.fill = PatternFill("solid", fgColor=MARCA)
         cell.alignment = Alignment(vertical="center", horizontal="center", wrap_text=True)
         ws.column_dimensions[get_column_letter(c)].width = larguras[c-1]
     ws.row_dimensions[1].height = 28

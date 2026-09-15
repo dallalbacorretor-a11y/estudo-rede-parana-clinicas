@@ -1,0 +1,30 @@
+{
+  "_leia_me": [
+    "Hospitais que o beneficiario acessa por DIRECIONAMENTO INTERNO da operadora:",
+    "nao aparecem na busca daquele plano, mas sao liberados mediante encaminhamento.",
+    "Isto NAO vem da API - e conhecimento do corretor. Editar aqui e rodar de novo",
+    "build_dados.py + montar_site.py (pagina) e build_comp.py + os build_* (xlsx/PDF).",
+    "A chave e o CNPJ so com numeros; o nome ao lado e apenas para leitura humana.",
+    "Marcado como (D), o prestador passa a aparecer no plano, com D no lugar do visto."
+  ],
+  "nomes": {
+    "76591049000985": "Hospital Erastinho",
+    "76591049000128": "Hospital Erasto Gaertner",
+    "76591569000130": "Hospital Infantil Pequeno Principe",
+    "81306136000126": "Novaclinica Hospital e Maternidade"
+  },
+  "por_plano": {
+    "400 QP": [
+      "76591049000985",
+      "76591049000128",
+      "76591569000130"
+    ],
+    "600 QC": [],
+    "CIM QC": [
+      "76591049000985",
+      "76591049000128",
+      "76591569000130",
+      "81306136000126"
+    ]
+  }
+}

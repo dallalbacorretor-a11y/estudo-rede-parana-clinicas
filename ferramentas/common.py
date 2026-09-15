@@ -119,6 +119,23 @@ for _cod, _n, _c, _a in PLANOS:
             _RID[_k] = str(_r["id"])
 
 
+# Hospitais liberados por direcionamento interno. Não vem da API: é curadoria
+# do corretor, em dados/direcionamento.json. O prestador passa a constar no
+# plano, mas com (D) no lugar do visto — quem lê precisa saber que o acesso
+# depende de encaminhamento.
+_DIR = _ler("direcionamento.json").get("por_plano") or {}
+DIRECIONAMENTO = {curto: {re.sub(r"\D", "", c) for c in (_DIR.get(curto) or [])}
+                  for _c, _n, curto, _a in PLANOS}
+
+
+def direcionado(cnpj, curto):
+    return re.sub(r"\D", "", cnpj or "") in DIRECIONAMENTO.get(curto, ())
+
+
+def planos_direcionados(cnpj):
+    return [curto for _c, _n, curto, _a in PLANOS if direcionado(cnpj, curto)]
+
+
 def _parte(txt):
     return [s.strip() for s in re.split(r",(?![^(]*\))", txt or "") if s.strip()]
 

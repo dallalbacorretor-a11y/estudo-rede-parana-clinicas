@@ -17,8 +17,13 @@ def build():
     hoje = datetime.date.today().strftime("%d/%m/%Y")
     linhas = []
     for r in dados:
+        dirs = r.get("dir") or []
         tds = "".join(
-            '<td class="chk" style="color:%s">%s</td>' % (CORES[c], "✔" if c in r["planos"] else "·")
+            '<td class="chk" style="color:%s" %s>%s</td>'
+            % (CORES[c],
+               'title="Direcionamento interno: atende por encaminhamento da operadora"'
+               if c in dirs else "",
+               "D" if c in dirs else ("✔" if c in r["planos"] else "·"))
             for c in CURTOS)
         linhas.append(
             '<tr data-cat="%s" data-cid="%s" data-txt="%s">'

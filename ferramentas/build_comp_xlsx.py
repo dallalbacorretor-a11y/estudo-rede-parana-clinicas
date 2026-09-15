@@ -13,9 +13,10 @@ BASE = _local.RAIZ
 D1 = os.path.join(BASE, "01 - REDE CREDENCIADA", "Paraná Clínicas")
 D2 = os.path.join(BASE, "02 - COMPARATIVOS DE REDE")
 CURTOS = [p[2] for p in PLANOS]
-CORES = {"400 QP": "A80A32", "600 QC": "1F6B4E", "CIM QC": "2A2ABF"}
-TINT = {"400 QP": "FBEEF1", "600 QC": "EDF5F1", "CIM QC": "EEEEFB"}
-NAVY = "10233F"
+# mesma paleta da página e dos PDFs (validada para daltonismo e contraste)
+CORES = {"400 QP": "A80A32", "600 QC": "6B3F8F", "CIM QC": "B5761B"}
+TINT = {"400 QP": "FDF2F5", "600 QC": "F5F1FA", "CIM QC": "FDF6EC"}
+NAVY = "8E0E28"   # vermelho da operadora, no lugar do navy herdado
 thin = Side(style="thin", color="D9D9D9")
 BORD = Border(left=thin, right=thin, top=thin, bottom=thin)
 HOJE = datetime.date.today().strftime("%d/%m/%Y")
@@ -33,7 +34,8 @@ for r in d:
     ws.append([r["categoria"], r["tipo"], r["nome"], r["cnpj"], r["esp"],
                r["cidade"], r["bairro"], r["endereco"], r["cep"], r["tel"],
                r["email"]] +
-              ["✔" if c in r["planos"] else "" for c in CURTOS])
+              ["D" if c in (r.get("dir") or []) else
+               ("✔" if c in r["planos"] else "") for c in CURTOS])
 for c in range(1, len(COLS) + 1):
     cell = ws.cell(row=1, column=c)
     cell.font = Font(bold=True, color="FFFFFF", size=10)
@@ -121,6 +123,9 @@ for cid in sorted(set(x["cidade"] for x in d), key=lambda c: -sum(1 for x in d i
     L.append("| %s | %s |" % (cid, " | ".join(
         str(sum(1 for x in d if x["cidade"] == cid and c in x["planos"])) for c in CURTOS)))
 L.append("\n## Observações\n")
+L.append("- **D** na coluna do plano significa **direcionamento interno**: o hospital atende, mas por "
+         "encaminhamento da operadora, não por acesso livre. Hoje vale para **Erastinho**, "
+         "**Erasto Gaertner** e **Pequeno Príncipe** no 400 e no CIM, e para o **Novaclínica** no CIM.")
 L.append("- A categoria vem do campo **tipo de estabelecimento** da operadora, não do tipo de prestador. "
          "É o que separa **hospital geral** (onde a internação acontece) de especializado, e é o que tira "
          "os **centros de diagnóstico por imagem** de dentro de \"clínica\" — quem procura ressonância "
