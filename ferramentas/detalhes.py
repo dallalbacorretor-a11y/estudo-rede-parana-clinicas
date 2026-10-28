@@ -4,9 +4,13 @@ import sys, os, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _local  # noqa: F401  (fixa o diretorio de trabalho)
 from api import call
+from privacidade import guarda_cpfs, limpa_detalhe
 
 OUT = "dados/detalhes.json"
 cache = json.load(open(OUT, encoding="utf-8")) if os.path.exists(OUT) else {}
+# CPF e e-mail pessoal nunca ficam no JSON versionado (ver privacidade.py)
+guarda_cpfs(cache)
+cache = {k: limpa_detalhe(v) for k, v in cache.items()}
 
 # O mesmo prestador/endereco tem um id por plano. Basta o detalhe de UM
 # representante por (nome, endereco, numero, cep) - o resto e o mesmo cadastro.
@@ -32,7 +36,9 @@ CAMPOS = ("id_prestador", "nome_prestador", "razao_social", "cpf_cnpj", "enderec
 for n, pid in enumerate(falta, 1):
     r = call("prestador/detalhePrestador", {"idOperadora": 33, "idPrestador": pid, "espagr": "S"})
     d = r.get("data") if isinstance(r, dict) else None
-    cache[str(pid)] = {k: d.get(k) for k in CAMPOS} if isinstance(d, dict) else {}
+    bruto = {k: d.get(k) for k in CAMPOS} if isinstance(d, dict) else {}
+    guarda_cpfs({str(pid): bruto})
+    cache[str(pid)] = limpa_detalhe(bruto)
     if n % 25 == 0:
         json.dump(cache, open(OUT, "w", encoding="utf-8"), ensure_ascii=False)
         print(" ", n, "/", len(falta), flush=True)

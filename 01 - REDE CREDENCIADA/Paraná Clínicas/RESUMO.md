@@ -52,15 +52,15 @@ Operadora: Paraná Clínicas (grupo SulAmérica). Abrangência dos três planos:
 | Colombo | 5 | 6 | 1 |
 | Piraquara | 3 | 5 | 1 |
 | Fazenda Rio Grande | 4 | 4 | 0 |
-| Rio Branco do Sul | 3 | 3 | 1 |
 | Campina Grande do Sul | 2 | 3 | 1 |
-| Tijucas do Sul | 2 | 2 | 0 |
+| Rio Branco do Sul | 3 | 3 | 1 |
 | Almirante Tamandaré | 2 | 2 | 0 |
 | Quatro Barras | 2 | 2 | 0 |
+| Tijucas do Sul | 2 | 2 | 0 |
 | Mandirituba | 1 | 1 | 0 |
+| Lapa | 1 | 1 | 0 |
 | Itaperuçu | 1 | 1 | 1 |
 | Bocaiúva do Sul | 1 | 1 | 0 |
-| Lapa | 1 | 1 | 0 |
 
 ## Observações
 

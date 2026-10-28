@@ -9,6 +9,7 @@ import sys, os, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _local  # noqa: F401  (fixa o diretorio de trabalho)
 from api import call
+from privacidade import cpf_de, eh_cpf
 
 det = json.load(open("dados/detalhes.json", encoding="utf-8"))
 ESP, CC = "dados/esp_full.json", "dados/corpo_clinico.json"
@@ -21,18 +22,20 @@ INSTITUCIONAL = {"Hospital Geral", "Hospital Especializado", "Policlínica",
                  "SADT - Terapias", "SADT - Terapias Especiais", "SADT - Oncologia",
                  "SADT - Outros", "Unidade Própria", "Próprio São José  Pinhais"}
 
-falta_esp = [k for k, v in det.items() if v.get("cpf_cnpj") and k not in esp]
+# o CPF de medico pessoa fisica nao fica no detalhes.json; a API ainda precisa dele
+doc = {k: v.get("cpf_cnpj") or cpf_de(k) for k, v in det.items()}
+falta_esp = [k for k in det if doc[k] and k not in esp]
 # corpo clinico e por CNPJ, nao por endereco
 por_cnpj = {}
 for k, v in det.items():
-    if v.get("tipo_estabelecimento") in INSTITUCIONAL and v.get("cpf_cnpj"):
+    if v.get("tipo_estabelecimento") in INSTITUCIONAL and v.get("cpf_cnpj") and not eh_cpf(v["cpf_cnpj"]):
         por_cnpj.setdefault(v["cpf_cnpj"], k)
 falta_cc = [(c, k) for c, k in por_cnpj.items() if c not in cc]
 print(len(falta_esp), "especialidades +", len(falta_cc), "corpo clinico", flush=True)
 
 for n, k in enumerate(falta_esp, 1):
     r = call("prestador/listaEspecialidadesPrestador",
-             {"idOperadora": 33, "idPrestador": int(k), "cpfCnpj": det[k]["cpf_cnpj"]})
+             {"idOperadora": 33, "idPrestador": int(k), "cpfCnpj": doc[k]})
     lista = r.get("data") if isinstance(r, dict) else None
     esp[k] = [{"e": (x.get("descricao") or "").strip(),
                "end": (x.get("endereco") or "").strip(),

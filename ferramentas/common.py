@@ -9,6 +9,7 @@ import json, os, re, sys, unicodedata
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _local  # noqa: F401  (fixa o diretorio de trabalho)
+from privacidade import documento_publico, email_publico
 
 PLANOS = [("236", "Paraná 400 AHO QP COPART SR", "400 QP", "507887263"),
           ("237", "Paraná 600 AHO QC COPART SR", "600 QC", "507885267"),
@@ -174,7 +175,7 @@ def carrega(cod):
             "id": r["id"],
             "nome": (r.get("nome") or "").strip(),
             "chave": k,
-            "cnpj": (d.get("cpf_cnpj") or "").strip(),
+            "cnpj": documento_publico(d.get("cpf_cnpj")),
             "categoria": cat,
             "tipo": (d.get("tipo_estabelecimento") or r.get("_tipo") or "").strip(),
             "unidade": CIM_UNIDADE.get(r.get("_classe"), ""),
@@ -184,7 +185,7 @@ def carrega(cod):
             "cep": (r.get("cep") or "").strip(),
             "tel": tel(r.get("tel")),
             "tel2": tel(r.get("tel_sec")),
-            "email": (d.get("email") or "").strip().lower(),
+            "email": email_publico(d.get("email"), d.get("cpf_cnpj")),
             "acess": (d.get("acessibilidade") or "") == "S",
             "esp": ", ".join(esp),
             # antes isto era um chute por palavra-chave no nome; agora a

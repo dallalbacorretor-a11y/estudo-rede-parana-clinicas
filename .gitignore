@@ -4,3 +4,5 @@ __pycache__/
 # intermediarios regeraveis (build_comp.py / export_xlsx.py os refazem)
 ferramentas/dados/comparativo.json
 ferramentas/dados/todos.json
+# CPF de medico (so no computador; ver ferramentas/privacidade.py)
+ferramentas/dados/_privado.json

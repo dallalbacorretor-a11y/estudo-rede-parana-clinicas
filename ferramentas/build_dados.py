@@ -5,6 +5,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _local  # noqa: F401  (fixa o diretorio de trabalho)
 from common import (norm, cidade_bonita, planos_direcionados, LUGAR,
                     CATEGORIAS, CATS_EXAME, CIM_UNIDADE, PADRAO)
+from privacidade import documento_publico, email_publico
 
 HOJE = "12/09/2026"
 
@@ -116,12 +117,12 @@ for k, e in linhas.items():
 
     e.update({
         "nome": (r.get("nome") or "").strip().upper(),
-        "cnpj": cnpj_fmt(d.get("cpf_cnpj")),
+        "cnpj": cnpj_fmt(documento_publico(d.get("cpf_cnpj"))),
         "cidade": cidade_bonita(r.get("_cidade") or d.get("nome_cidade")).upper(),
         "bairro": (r.get("bairro") or "").strip().upper(),
         "end": ender(r),
         "tels": [t for t in (fone(r.get("tel")), fone(r.get("tel_sec"))) if t],
-        "email": (d.get("email") or "").strip().lower(),
+        "email": email_publico(d.get("email"), d.get("cpf_cnpj")),
         "acess": (d.get("acessibilidade") or "") == "S",
         "lugar": lugar, "cats": cats, "tipo_est": tipo_est,
         "esp": sorted(set(esp), key=esp.index),
