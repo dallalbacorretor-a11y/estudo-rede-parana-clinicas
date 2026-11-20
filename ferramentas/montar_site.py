@@ -279,7 +279,10 @@ app = troca(app,
             '      [lab.length, "Laboratórios de análises clínicas"],\n'
             '      [cim.length + medCim.length, "Atendimento nos CIM"],\n'
             '      [cons.length, "Clínicas e consultórios"],\n'
-            '      [lista.length, "Prestadores no total"]\n'
+            '      [lista.filter(function (p) { return !soPorDirecionamento(p); }).length,\n'
+            '       "Prestadores no total"],\n'
+            '      [lista.filter(soPorDirecionamento).length,\n'
+            '       "Por direcionamento interno (D), à parte"]\n'
             '    ].filter(function (n) { return n[0]; }));')
 
 # secoes do PDF: pelas categorias da operadora, e os grupos de exame passam a
@@ -472,7 +475,81 @@ head = troca(head,
              'por isso Paraná 400 AHO QC e Paraná 600 AHO QP não aparecem à parte, '
              'estão dentro do 400 e do 600. <b>D</b> na coluna do plano significa '
              '<b>direcionamento interno</b>: o hospital atende, mas por '
-             'encaminhamento da operadora, não por acesso livre.</p>')
+             'encaminhamento da operadora, não por acesso livre. Contagem por '
+             'endereço de atendimento: cada prestador conta uma vez em cada '
+             'endereço; os <b>D</b> aparecem na lista, mas ficam fora do total '
+             'do plano e são contados à parte.</p>')
+
+# ------------------------------------- total do plano = busca oficial; D a parte
+# O numero principal (cartao, grafico, tabela, PDF) e o da busca oficial - o
+# mesmo das planilhas, do comparativo e dos PDFs. O D e informacao do corretor
+# (dados/direcionamento.json): continua na lista, contado a parte.
+app = troca(app,
+            '  function selecionados() {\n'
+            '    return D.produtos\n'
+            '      .filter(function (p) { return estado.produtos[p.codigo]; })\n'
+            '      .map(function (p) { return p.codigo; });\n'
+            '  }\n',
+            '  function selecionados() {\n'
+            '    return D.produtos\n'
+            '      .filter(function (p) { return estado.produtos[p.codigo]; })\n'
+            '      .map(function (p) { return p.codigo; });\n'
+            '  }\n'
+            '\n'
+            '  /* Linha que so entra no filtro de plano por direcionamento interno\n'
+            '     (D): aparece na tabela, mas fica fora do total do plano. */\n'
+            '  function soPorDirecionamento(p) {\n'
+            '    var sel = selecionados();\n'
+            '    if (!sel.length || !(p.dir || []).length) return false;\n'
+            '    var oficial = produtosDe(p).filter(function (c) {\n'
+            '      return p.dir.indexOf(c) < 0;\n'
+            '    });\n'
+            '    var tem = sel.filter(function (c) { return oficial.indexOf(c) >= 0; });\n'
+            '    return estado.modo === "e" ? tem.length !== sel.length : !tem.length;\n'
+            '  }\n')
+app = troca(app,
+            '      var quem = base.filter(function (p) {\n'
+            '        return produtosDe(p).indexOf(pr.codigo) >= 0;\n'
+            '      });\n'
+            '      var cid = {}, hosp = 0;\n',
+            '      var quem = base.filter(function (p) {\n'
+            '        return produtosDe(p).indexOf(pr.codigo) >= 0;\n'
+            '      });\n'
+            '      var nDir = quem.filter(function (p) {\n'
+            '        return (p.dir || []).indexOf(pr.codigo) >= 0;\n'
+            '      }).length;\n'
+            '      quem = quem.filter(function (p) {\n'
+            '        return (p.dir || []).indexOf(pr.codigo) < 0;\n'
+            '      });\n'
+            '      var cid = {}, hosp = 0;\n')
+app = troca(app,
+            '      dados[pr.codigo] = { n: quem.length, hosp: hosp,\n',
+            '      dados[pr.codigo] = { n: quem.length, hosp: hosp, dir: nDir,\n')
+app = troca(app,
+            '                      " · " + d.cid + (d.cid === 1 ? " cidade" : " cidades");\n',
+            '                      " · " + d.cid + (d.cid === 1 ? " cidade" : " cidades") +\n'
+            '                      (d.dir ? " · +" + d.dir + " por direcionamento" : "");\n')
+app = troca(app,
+            '    var cidades = {}, porCat = {};\n'
+            '    r.forEach(function (p) {\n'
+            '      (p.cr && p.cr.length ? p.cr : p.cid).forEach(function (c) {\n'
+            '        cidades[c] = 1;\n'
+            '      });\n'
+            '      porCat[tipoDe(p) || p.cat] = (porCat[tipoDe(p) || p.cat] || 0) + 1;\n'
+            '    });\n',
+            '    var cidades = {}, porCat = {}, nDir = 0;\n'
+            '    r.forEach(function (p) {\n'
+            '      if (soPorDirecionamento(p)) { nDir++; return; }\n'
+            '      (p.cr && p.cr.length ? p.cr : p.cid).forEach(function (c) {\n'
+            '        cidades[c] = 1;\n'
+            '      });\n'
+            '      porCat[tipoDe(p) || p.cat] = (porCat[tipoDe(p) || p.cat] || 0) + 1;\n'
+            '    });\n')
+app = troca(app,
+            '''    var m = '<div class="metrica"><b>' + r.length + "</b><span>prestadores</span></div>" +\n''',
+            '''    var m = '<div class="metrica"><b>' + (r.length - nDir) + "</b><span>prestadores</span></div>" +\n'''
+            '''            (nDir ? '<div class="metrica"><b>+' + nDir +\n'''
+            '''                    "</b><span>por direcionamento</span></div>" : "") +\n''')
 
 # no PDF, D no lugar do visto (mesma regra)
 lib = troca(lib,

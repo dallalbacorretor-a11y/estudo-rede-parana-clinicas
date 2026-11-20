@@ -111,6 +111,30 @@ def chave(r):
             (r.get("numero") or "").strip(), (r.get("cep") or "").strip())
 
 
+# ------------------------------------------------------------ a base única
+# O que se conta, igual em TODOS os arquivos (página, planilhas, comparativo,
+# PDFs, RESUMO e README): PRESTADORES, contados por endereço de atendimento.
+# A operadora às vezes publica o mesmo endereço duas vezes (dois ids, CEP
+# diferente): por isso a chave é CNPJ + logradouro + número, sem CEP nem
+# complemento. Sem CNPJ (médico pessoa física), vale o nome.
+def chave_base(nome, cnpj, logradouro, numero):
+    doc = re.sub(r"\D", "", cnpj or "")
+    return (doc or "N:" + norm(nome), norm(logradouro), norm(numero))
+
+
+UNIDADE = "prestadores"
+NOTA_CONTAGEM = ("Contagem por endereço de atendimento: cada prestador conta uma vez "
+                 "em cada endereço (um laboratório com 3 unidades conta 3). Hospitais "
+                 "marcados com D (direcionamento interno, informação do corretor, não "
+                 "da busca oficial) aparecem na lista, mas ficam fora do total do plano "
+                 "e são contados à parte.")
+
+
+def texto_dir(n):
+    """'+3 por direcionamento' - o D sempre à parte do número principal."""
+    return ("+%d por direcionamento" % n) if n else ""
+
+
 def _ler(nome):
     p = "dados/" + nome
     return json.load(open(p, encoding="utf-8")) if os.path.exists(p) else {}
@@ -181,11 +205,12 @@ def carrega(cod):
         d = _DET.get(_RID.get(k) or "", {})
         cat = LUGAR.get((d.get("tipo_estabelecimento") or "").strip(), PADRAO)
         esp = especialidades(r)
+        cnpj = documento_publico(d.get("cpf_cnpj"))
         out.append({
             "id": r["id"],
             "nome": (r.get("nome") or "").strip(),
-            "chave": k,
-            "cnpj": documento_publico(d.get("cpf_cnpj")),
+            "chave": chave_base(r.get("nome"), cnpj, r.get("endereco"), r.get("numero")),
+            "cnpj": cnpj,
             "categoria": cat,
             "tipo": (d.get("tipo_estabelecimento") or r.get("_tipo") or "").strip(),
             "unidade": CIM_UNIDADE.get(r.get("_classe"), ""),
@@ -201,5 +226,10 @@ def carrega(cod):
             # antes isto era um chute por palavra-chave no nome; agora a
             # própria operadora diz o que é estabelecimento e o que é pessoa
             "inst": cat not in PESSOAIS,
+            # o que a página usa e os arquivos de escritório não
+            "esp_lista": esp,
+            "logradouro": ", ".join(x for x in ((r.get("endereco") or "").strip(),
+                                                (r.get("numero") or "").strip()) if x),
+            "lat": r.get("lat"), "lon": r.get("lon"),
         })
     return out

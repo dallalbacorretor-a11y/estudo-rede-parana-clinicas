@@ -2,8 +2,8 @@
 import os, sys, json, html, datetime
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _local  # noqa: F401  (fixa o diretorio de trabalho)
-from common import PLANOS, ORDEM_CAT, norm
-from build_comp import concilia
+from common import PLANOS, ORDEM_CAT, norm, NOTA_CONTAGEM, texto_dir
+from build_comp import concilia, totais
 
 BASE = _local.RAIZ
 D2 = os.path.join(BASE, "02 - COMPARATIVOS DE REDE")
@@ -40,9 +40,18 @@ def build():
     ths = "".join('<th class="pl" style="background:%s">%s</th>' % (CORES[c], c) for c in CURTOS)
     cats = "".join('<option value="%s">%s</option>' % (c, c) for c in ORDEM_CAT)
     cids = "".join('<option value="%s">%s</option>' % (c, c) for c in sorted(set(r["cidade"] for r in dados)))
+    # os mesmos totais da página, das planilhas e dos PDFs (build_comp.totais)
+    por, uniao = totais(dados)
+    planos = " · ".join(
+        '<b>%s</b>: %d prestadores%s' % (
+            html.escape(nome), por[curto][0],
+            (" (" + texto_dir(por[curto][1]) + ")") if por[curto][1] else "")
+        for cod, nome, curto, ans in PLANOS) + \
+        " · <b>união dos três</b>: %d prestadores." % uniao
     tpl = open("template.html", encoding="utf-8").read()
     doc = (tpl.replace("{{LINHAS}}", "\n".join(linhas)).replace("{{THS}}", ths)
               .replace("{{CATS}}", cats).replace("{{CIDS}}", cids)
+              .replace("{{PLANOS}}", planos).replace("{{NOTA}}", html.escape(NOTA_CONTAGEM))
               .replace("{{DATA}}", hoje).replace("{{TOTAL}}", str(len(dados))))
     fn = os.path.join(D2, "COMPARATIVO REDE PARANA CLINICAS.html")
     open(fn, "w", encoding="utf-8").write(doc)

@@ -7,8 +7,8 @@ Clínicas, selo dourado da Mazza, faixas de categoria e a mesma cor por plano.
 import os, sys, re, datetime
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _local  # noqa: F401  (fixa o diretorio de trabalho)
-from common import PLANOS, ORDEM_CAT, CATS_EXAME, norm
-from build_comp import concilia
+from common import PLANOS, ORDEM_CAT, CATS_EXAME, norm, NOTA_CONTAGEM, texto_dir
+from build_comp import concilia, totais
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import mm
 from reportlab.lib import colors
@@ -105,13 +105,16 @@ def esc(t):
 
 # ------------------------------------------------------------------ páginas
 class Doc(BaseDocTemplate):
-    def __init__(self, fn, subtitulo, resumo):
+    def __init__(self, fn, subtitulo, resumo, selecao=None):
         BaseDocTemplate.__init__(self, fn, pagesize=(PW, PH), leftMargin=12 * mm,
                                  rightMargin=12 * mm, topMargin=13 * mm,
                                  bottomMargin=13 * mm,
                                  title="Comparativo de Rede - Parana Clinicas",
                                  author="Mazza Broker")
         self.subtitulo, self.resumo = subtitulo, resumo
+        # selecao = totais da rede COMPLETA de cada plano, quando este PDF é
+        # um recorte (o CLIENTES): a capa diz que é seleção e cita o total
+        self.selecao = selecao
         f = Frame(12 * mm, 13 * mm, PW - 24 * mm, PH - 26 * mm, id="n")
         self.addPageTemplates([
             PageTemplate(id="capa", frames=[Frame(0, 0, PW, PH, id="c")], onPage=self.capa),
@@ -154,15 +157,31 @@ class Doc(BaseDocTemplate):
             c.setFillColor(colors.HexColor("#f0cdd5")); c.setFont("Helvetica", 7.6)
             c.drawString(bx + 7, yc + 8.5 * mm,
                          "QP · apartamento" if k.endswith("QP") else "QC · enfermaria")
+            n, nd = self.resumo["planos"][k]
             c.setFillColor(BRANCO); c.setFont("Times-Bold", 17)
-            c.drawRightString(bx + larg - 7, yc + 8 * mm, str(self.resumo["planos"][k]))
+            c.drawRightString(bx + larg - 7, yc + 8 * mm, str(n))
             c.setFillColor(colors.HexColor("#e3adb9")); c.setFont("Helvetica", 6.2)
-            c.drawRightString(bx + larg - 7, yc + 4.6 * mm, "PRESTADORES")
+            c.drawRightString(bx + larg - 7, yc + 4.6 * mm,
+                              "NESTA SELEÇÃO" if self.selecao else "PRESTADORES")
+            # o D (direcionamento) nunca entra no número grande: vem à parte
+            if self.selecao:
+                tn, td = self.selecao[k]
+                extra = "rede completa: %d prestadores" % tn + (" + %d D" % td if td else "")
+            else:
+                extra = texto_dir(nd)
+            if extra:
+                c.setFillColor(colors.HexColor("#f0cdd5")); c.setFont("Helvetica", 6.4)
+                c.drawString(bx + 7, yc + 1.8 * mm, extra)
 
         c.setFillColor(colors.HexColor("#e3adb9")); c.setFont("Helvetica", 9)
         c.drawString(x, topo - 60 * mm,
                      "Levantado na busca oficial de rede credenciada da Paraná Clínicas "
                      "em " + HOJE + ".")
+        if self.selecao:
+            c.setFillColor(OURO_CLARO); c.setFont("Helvetica-Bold", 9)
+            c.drawString(x, topo - 66 * mm,
+                         "Seleção dos principais estabelecimentos — sem consultórios e sem os "
+                         "médicos dos CIM. A rede completa está no material de apresentação.")
 
         # assinatura
         c.setFillColor(OURO); c.rect(x, 22 * mm, 34 * mm, 11 * mm, fill=1, stroke=0)
@@ -281,10 +300,11 @@ def pagina_abertura(resumo):
               Paragraph("O prestador não apareceu na busca oficial daquele plano "
                         "na data desta consulta.<br/><b>D</b> no lugar do visto: "
                         "atende por <b>direcionamento interno</b> — o acesso "
-                        "depende de encaminhamento da operadora.", cb)]]
+                        "depende de encaminhamento da operadora; fica fora do "
+                        "total do plano e é contado à parte.", cb)]]
     tc = Table(cards, colWidths=[(PW - 24 * mm - 2 * 6 * mm) / 3.0] * 3,
                rowHeights=[13, 30], colWidths2=None) if False else \
-        Table(cards, colWidths=[(PW - 24 * mm - 12 * mm) / 3.0] * 3, rowHeights=[13, 42])
+        Table(cards, colWidths=[(PW - 24 * mm - 12 * mm) / 3.0] * 3, rowHeights=[13, None])   # altura do texto mais longo
     tc.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#fdf7f8")),
         ("LINEABOVE", (0, 0), (0, 0), 2, CORES["400 QP"]),
@@ -301,7 +321,7 @@ def pagina_abertura(resumo):
         'Este material é informativo e retrata a consulta feita em %s. Confirme no portal '
         'da Paraná Clínicas antes de contratar. Os prestadores estão agrupados pela '
         'categoria que a operadora publica e, dentro de cada uma, pela abrangência nos '
-        'planos e pela cidade.' % HOJE,
+        'planos e pela cidade. %s' % (HOJE, esc(NOTA_CONTAGEM)),
         S("av", fontName="Helvetica", fontSize=8, leading=11.5, textColor=BRANCO))]],
         colWidths=[PW - 24 * mm])
     aviso.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), MARCA),
@@ -399,12 +419,15 @@ def tabela(linhas):
 
 
 # -------------------------------------------------------------------- monta
-def monta_resumo(dados):
+def monta_resumo(dados, selecao=False):
+    por, uniao = totais(dados)
+    ofi = [d for d in dados if d["oficial"]]     # D não entra nos números
+
     def n(*cats):
-        return len([d for d in dados if d["categoria"] in cats])
+        return len([d for d in ofi if d["categoria"] in cats])
     quadros = [
-        (len(dados), "prestadores"),
-        (len(set(d["cidade"] for d in dados)), "cidades"),
+        (uniao, "prestadores nesta seleção" if selecao else "prestadores"),
+        (len(set(d["cidade"] for d in ofi)), "cidades"),
         (n("Hospitais gerais"), "hospitais gerais"),
         (n("Hospitais especializados"), "especializados"),
         (n("Diagnóstico por imagem"), "centros de imagem"),
@@ -414,13 +437,13 @@ def monta_resumo(dados):
          "clínicas e consultórios"),
     ]
     from collections import Counter
-    cid = Counter(d["cidade"] for d in dados)
+    cid = Counter(d["cidade"] for d in ofi)
     return {"quadros": quadros,
             "cidades": cid.most_common(),
-            "planos": {k: len([d for d in dados if k in d["planos"]]) for k in CURTOS}}
+            "planos": por}
 
 
-def gera(fn, dados, subtitulo):
+def gera(fn, dados, subtitulo, completo=None):
     linhas = []
     for cat in ORDEM_CAT:
         sub = [d for d in dados if d["categoria"] == cat]
@@ -430,18 +453,19 @@ def gera(fn, dados, subtitulo):
                                 r["cidade"], norm(r["nome"])))
         linhas.append(("cat", (cat, len(sub))))
         linhas += [("row", d) for d in sub]
-    doc = Doc(fn, subtitulo, monta_resumo(dados))
+    resumo = monta_resumo(dados, selecao=completo is not None)
+    doc = Doc(fn, subtitulo, resumo, selecao=completo)
     doc.build([NextPageTemplate("normal"), PageBreak()]
-              + pagina_abertura(monta_resumo(dados))
+              + pagina_abertura(resumo)
               + [PageBreak(), tabela(linhas)])
-    print("ok", fn, len(dados), "prestadores")
+    print("ok", fn, resumo["planos"])
 
 
 if __name__ == "__main__":
     d = concilia()
     princ = [x for x in d if x.get("inst")]
     gera(os.path.join(D2, "COMPARATIVO REDE PARANA CLINICAS - CLIENTES (Principais).pdf"),
-         princ, "Hospitais, centros de diagnóstico, laboratórios, clínicas e "
-                "unidades próprias CIM")
+         princ, "Seleção: hospitais, centros de diagnóstico, laboratórios, clínicas e "
+                "unidades próprias CIM", completo=totais(d)[0])
     gera(os.path.join(D2, "COMPARATIVO REDE PARANA CLINICAS - Apresentacao.pdf"),
          d, "Rede completa — inclui os consultórios e os médicos que atendem nos CIM")

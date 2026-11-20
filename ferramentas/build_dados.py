@@ -3,9 +3,8 @@
 import sys, os, json, re
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _local  # noqa: F401  (fixa o diretorio de trabalho)
-from common import (norm, cidade_bonita, planos_direcionados, LUGAR,
-                    CATEGORIAS, CATS_EXAME, CIM_UNIDADE, PADRAO)
-from privacidade import documento_publico, email_publico
+from common import norm, CATEGORIAS, CATS_EXAME, PADRAO
+from build_comp import concilia
 
 from common import DATA_COLETA as HOJE   # data da coleta da rede
 
@@ -25,9 +24,6 @@ COD = {"236": "p400", "237": "p600", "234": "cim"}
 # As categorias, a ordem e o mapa de tipo_estabelecimento vivem no common:
 # a pagina e os arquivos de escritorio precisam classificar igual.
 
-det = json.load(open("dados/detalhes.json", encoding="utf-8"))
-espf = json.load(open("dados/esp_full.json", encoding="utf-8")) \
-    if os.path.exists("dados/esp_full.json") else {}
 cc = json.load(open("dados/corpo_clinico.json", encoding="utf-8")) \
     if os.path.exists("dados/corpo_clinico.json") else {}
 
@@ -58,106 +54,13 @@ def cnpj_fmt(c):
     return c
 
 
-def ender(r):
-    p = (r.get("endereco") or "").strip()
-    n = (r.get("numero") or "").strip()
-    return (p + (", " + n if n else "")).upper()
-
-
-def parte_esp(txt):
-    """Separa 'A, B, C' sem quebrar dentro de parenteses."""
-    return [s.strip().upper() for s in re.split(r",(?![^(]*\))", txt or "") if s.strip()]
-
-
-# ------------------------------------------------------ 1) junta os 3 planos
-# Uma linha por (prestador, endereco); cada uma sabe em que planos aparece e
-# quais ids a representam (o id muda de plano para plano).
-linhas = {}
-for cod, prod in COD.items():
-    for r in json.load(open("dados/rede2_%s.json" % cod, encoding="utf-8")):
-        k = (norm(r.get("nome")), norm(r.get("endereco")),
-             (r.get("numero") or "").strip(), (r.get("cep") or "").strip())
-        e = linhas.get(k)
-        if not e:
-            e = linhas[k] = {"rows": [], "ids": [], "planos": set()}
-        e["rows"].append(r)
-        e["ids"].append(r["id"])
-        e["planos"].add(prod)
-
-for k, e in linhas.items():
-    r = e["rows"][0]
-    # o detalhe foi coletado para UM id por endereco; aceita qualquer um deles
-    rid = next((str(i) for i in e["ids"] if str(i) in det), None)
-    d = det.get(rid, {}) if rid else {}
-
-    # especialidades: a lista completa vem de listaEspecialidadesPrestador,
-    # que devolve por endereco; buscaRede e detalhePrestador cortam com [...]
-    esp = []
-    if rid and rid in espf:
-        alvo = (norm(r.get("endereco")), (r.get("numero") or "").strip())
-        esp = [x["e"].upper() for x in espf[rid]
-               if (norm(x.get("end")), (x.get("num") or "").strip()) == alvo]
-    if not esp and rid in espf:
-        # alguns enderecos da busca nao constam na lista por endereco (a
-        # operadora nao cadastrou); melhor a lista inteira do CNPJ do que o
-        # texto cortado com [...]
-        esp = [x["e"].upper() for x in espf[rid]]
-    if not esp:
-        txt = (d.get("especialidade") or "").strip()
-        if "[...]" in txt or not txt:
-            txt = (r.get("esp") or "").strip()
-        esp = parte_esp(txt)
-
-    tipo_est = (d.get("tipo_estabelecimento") or "").strip()
-    lugar = LUGAR.get(tipo_est, PADRAO)
-    cats = [lugar]
-    unidade = CIM_UNIDADE.get(r.get("_classe"))
-    if unidade:
-        cats.append(unidade)
-
-    e.update({
-        "nome": (r.get("nome") or "").strip().upper(),
-        "cnpj": cnpj_fmt(documento_publico(d.get("cpf_cnpj"))),
-        "cidade": cidade_bonita(r.get("_cidade") or d.get("nome_cidade")).upper(),
-        "bairro": (r.get("bairro") or "").strip().upper(),
-        "end": ender(r),
-        "tels": [t for t in (fone(r.get("tel")), fone(r.get("tel_sec"))) if t],
-        "email": email_publico(d.get("email"), d.get("cpf_cnpj")),
-        "acess": (d.get("acessibilidade") or "") == "S",
-        "lugar": lugar, "cats": cats, "tipo_est": tipo_est,
-        "esp": sorted(set(esp), key=esp.index),
-        "xy": [num(r.get("lat")), num(r.get("lon"))],
-    })
-
-# ------------------------------------------------- 2) agrupa por prestador
-# Chave: CNPJ quando existe (junta as varias unidades da mesma empresa);
-# senao o nome normalizado - sem isso cada endereco viraria um "prestador".
-grupos = {}
-for e in linhas.values():
-    k = e["cnpj"] or ("N:" + norm(e["nome"]))
-    g = grupos.get(k)
-    if not g:
-        g = grupos[k] = {"n": e["nome"], "c": e["cnpj"], "cid": set(), "pp": {},
-                         "b": set(), "e": set(), "t": set(), "p": set(),
-                         "mail": set(), "acess": False,
-                         "cats": set(), "pc": {}, "xy": None}
-    g["cid"].add(e["cidade"])
-    g["pp"].setdefault(e["cidade"], set()).update(e["planos"])
-    if e["bairro"]:
-        g["b"].add(e["bairro"])
-    if e["end"]:
-        g["e"].add(e["end"])
-    g["t"].update(e["tels"])
-    if e["email"]:
-        g["mail"].add(e["email"])
-    g["acess"] = g["acess"] or e["acess"]
-    g["p"].update(e["planos"])
-    for c in e["cats"]:
-        g["cats"].add(c)
-        g["pc"].setdefault(c, set()).update(e["esp"])
-    if g["xy"] is None and e["xy"][0] is not None:
-        g["xy"] = e["xy"]
-
+# ------------------------------------------------ 1) a base única do estudo
+# A página sai da MESMA base das planilhas, do comparativo e dos PDFs
+# (build_comp.concilia): um registro por prestador e endereço (CNPJ +
+# logradouro + número), com a rede oficial e o direcionamento (D) separados.
+# Antes a página agrupava por CNPJ e contava 373/456/208 "prestadores",
+# enquanto os outros arquivos contavam endereços - dois números para a mesma
+# rede. Agora uma linha da tabela é um endereço, como no comparativo.
 ordem_prod = [p["codigo"] for p in PRODUTOS]
 CURTO_COD = {"400 QP": "p400", "600 QC": "p600", "CIM QC": "cim"}
 ordem_cat = {c: i for i, c in enumerate(CATEGORIAS)}
@@ -167,41 +70,58 @@ def ord_p(s):
     return sorted(s, key=lambda x: ordem_prod.index(x))
 
 
-prestadores = []
-for cnpj, g in grupos.items():
-    lugares = [c for c in g["cats"] if c in ordem_cat] or [PADRAO]
-    cat = sorted(lugares, key=lambda c: ordem_cat[c])[0]
-    # o corpo clinico foi salvo com o CNPJ cru; a chave do grupo e formatada
-    equipe = cc.get(re.sub(r"\D", "", cnpj)) or []
-    # direcionamento interno: o hospital nao consta na busca daquele plano, mas
-    # e acessivel por encaminhamento - entra no plano, marcado com (D)
-    dirs = [CURTO_COD[c] for c in planos_direcionados(cnpj)]
-    planos = ord_p(set(g["p"]) | set(dirs))
-    prestadores.append({
-        "n": g["n"], "c": g["c"],
-        "cid": sorted(g["cid"]),
-        "pp": {k: ord_p(set(v) | set(dirs)) for k, v in sorted(g["pp"].items())},
-        "cr": sorted(g["cid"]),
-        "b": sorted(g["b"]), "e": sorted(g["e"]), "t": sorted(g["t"]),
-        "mail": sorted(g["mail"]),
-        "acess": g["acess"],
-        "eq": [[x["n"], x["cr"], x["e"]] for x in equipe],
-        "p": planos,
-        "dir": dirs,
-        "cat": cat,
-        "cats": sorted(g["cats"], key=lambda c: ordem_cat.get(c, 99)),
-        "esp": sorted(set().union(*g["pc"].values())) if g["pc"] else [],
-        "pc": {k: sorted(v) for k, v in sorted(g["pc"].items())},
-        "s": [],
-        "xy": g["xy"] or [None, None],
+linhas = []
+for x in concilia():
+    cats = [x["categoria"]]
+    if x.get("unidade"):
+        cats.append(x["unidade"])
+    esp = [e.upper() for e in (x.get("esp_lista") or [])]
+    linhas.append({
+        "nome": x["nome"].upper(),
+        "cnpj": cnpj_fmt(x["cnpj"]),
+        "cidade": x["cidade"].upper(),
+        "bairro": (x["bairro"] or "").upper(),
+        "end": (x["logradouro"] or "").upper(),
+        "tels": [t for t in (fone(x["tel"]), fone(x["tel2"])) if t],
+        "email": x["email"],
+        "acess": x["acess"],
+        "lugar": x["categoria"], "cats": cats,
+        "esp": sorted(set(esp), key=esp.index),
+        "xy": [num(x.get("lat")), num(x.get("lon"))],
+        # o total do plano conta so a rede oficial; o D entra na lista, a parte
+        "planos": ord_p({CURTO_COD[c] for c in x["planos"]}),
+        "dirs": ord_p({CURTO_COD[c] for c in x["dir"]}),
     })
-# a tabela insere a faixa quando a categoria muda de uma linha para a outra -
-# sem ordenar por categoria, a faixa se repete pagina afora
+
+prestadores = []
+for e in linhas:
+    # o corpo clinico foi salvo com o CNPJ cru
+    equipe = cc.get(re.sub(r"\D", "", e["cnpj"])) or []
+    prestadores.append({
+        "n": e["nome"], "c": e["cnpj"],
+        "cid": [e["cidade"]],
+        "pp": {e["cidade"]: e["planos"]},
+        "cr": [e["cidade"]],
+        "b": [e["bairro"]] if e["bairro"] else [],
+        "e": [e["end"]] if e["end"] else [],
+        "t": sorted(set(e["tels"])),
+        "mail": [e["email"]] if e["email"] else [],
+        "acess": e["acess"],
+        "eq": [[m["n"], m["cr"], m["e"]] for m in equipe],
+        "p": e["planos"],
+        "dir": e["dirs"],
+        "cat": e["lugar"] or PADRAO,
+        "cats": sorted(e["cats"], key=lambda c: ordem_cat.get(c, 99)),
+        "esp": sorted(set(e["esp"])),
+        "pc": {c: sorted(set(e["esp"])) for c in sorted(e["cats"])},
+        "s": [],
+        "xy": e["xy"] if e["xy"][0] is not None else [None, None],
+    })
 prestadores.sort(key=lambda p: (ordem_cat.get(p["cat"], 99), norm(p["n"])))
 
 # ----------------------------------------------- 3) centros (bairro|cidade)
 centros = {}
-for e in linhas.values():
+for e in linhas:
     if e["xy"][0] is None or not e["bairro"]:
         continue
     k = "%s|%s" % (norm(e["bairro"]), norm(e["cidade"]))
@@ -224,22 +144,11 @@ dados = {"PR": {
 json.dump(dados, open("dados/dados_pc.json", "w", encoding="utf-8"),
           ensure_ascii=False, separators=(",", ":"))
 
-from collections import Counter
-print("linhas (prestador+endereco):", len(linhas))
-print("prestadores agrupados:", len(prestadores),
+print("prestadores (um por endereço):", len(prestadores),
       "| sem CNPJ:", len([p for p in prestadores if not p["c"]]),
       "| sem coordenada:", len([p for p in prestadores if p["xy"][0] is None]))
-print("sem tipo_estabelecimento:", len([e for e in linhas.values() if not e["tipo_est"]]))
-print("com e-mail:", len([p for p in prestadores if p["mail"]]),
-      "| com equipe medica:", len([p for p in prestadores if p["eq"]]),
-      "| acessibilidade:", len([p for p in prestadores if p["acess"]]))
-print("especialidades truncadas restantes:",
-      len([p for p in prestadores for e in p["esp"] if "[...]" in e]))
 for p in PRODUTOS:
-    print("  %-12s %d prestadores" % (p["rotulo"],
-          len([x for x in prestadores if p["codigo"] in x["p"]])))
-for c in CATEGORIAS:
-    n = len([p for p in prestadores if p["cat"] == c])
-    if n:
-        print("  %-34s %d" % (c, n))
+    rede = [x for x in prestadores if p["codigo"] in x["p"] and p["codigo"] not in x["dir"]]
+    dirs = [x for x in prestadores if p["codigo"] in x["dir"]]
+    print("  %-12s %d prestadores  +%d por direcionamento" % (p["rotulo"], len(rede), len(dirs)))
 print("cidades:", len(set(c for p in prestadores for c in p["cid"])))

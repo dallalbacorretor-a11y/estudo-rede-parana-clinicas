@@ -2,7 +2,8 @@
 import os, sys, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _local  # noqa: F401  (fixa o diretorio de trabalho)
-from common import PLANOS, ORDEM_CAT, carrega, norm
+from common import PLANOS, ORDEM_CAT, norm, NOTA_CONTAGEM, DATA_COLETA
+from build_comp import concilia
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
@@ -32,42 +33,54 @@ def estiliza(ws, ncols, larguras):
             cell.border = BORD
 
 COLS = ["Categoria", "Tipo (operadora)", "Prestador", "CNPJ", "Especialidades",
-        "Cidade", "Bairro", "Endereço", "CEP", "Telefone", "Telefone 2", "E-mail"]
-LARG = [26, 30, 42, 20, 46, 20, 22, 44, 12, 16, 16, 32]
+        "Cidade", "Bairro", "Endereço", "CEP", "Telefone", "Telefone 2", "E-mail",
+        "No plano"]
+LARG = [26, 30, 42, 20, 46, 20, 22, 44, 12, 16, 16, 32, 10]
 
-def sheet_rede(ws, dados):
+def sheet_rede(ws, dados, curto):
     ws.append(COLS)
     dados = sorted(dados, key=lambda r: (ORDEM_CAT.index(r["categoria"]) if r["categoria"] in ORDEM_CAT else 99,
                                          r["cidade"], norm(r["nome"]), r["bairro"]))
     for r in dados:
+        # D = direcionamento interno (igual à página): consta na lista, fora do total
         ws.append([r["categoria"], r["tipo"], r["nome"], r["cnpj"], r["esp"],
                    r["cidade"], r["bairro"], r["endereco"], r["cep"],
-                   r["tel"], r["tel2"], r["email"]])
+                   r["tel"], r["tel2"], r["email"],
+                   "D" if curto in r["dir"] else "✔"])
     estiliza(ws, len(COLS), LARG)
 
-# ---- 1) um xlsx por plano
+# ---- 1) um xlsx por plano, da mesma base do comparativo, da página e dos PDFs
+from collections import Counter
+base = concilia()
 todos = {}
 for cod, nome, curto, ans in PLANOS:
-    dados = carrega(cod)
-    todos[cod] = dados
+    dados = [x for x in base if curto in x["planos"]]
+    rede = [x for x in dados if curto in x["oficial"]]
+    dirs = [x for x in dados if curto in x["dir"]]
+    todos[cod] = [{k: v for k, v in x.items() if k != "chave"} for x in dados]
     wb = Workbook(); ws = wb.active; ws.title = "Rede"
-    sheet_rede(ws, dados)
+    sheet_rede(ws, dados, curto)
     ws2 = wb.create_sheet("Resumo")
     ws2.append(["Plano", nome]); ws2.append(["Registro ANS", ans])
-    ws2.append(["Código do plano (busca)", cod]); ws2.append([])
-    ws2.append(["Categoria", "Prestadores/endereços"])
-    from collections import Counter
-    cc = Counter(r["categoria"] for r in dados)
+    ws2.append(["Código do plano (busca)", cod])
+    ws2.append(["Data da coleta", DATA_COLETA]); ws2.append([])
+    ws2.append(["Categoria", "Prestadores"])
+    cc = Counter(r["categoria"] for r in rede)
     for c in ORDEM_CAT:
         if cc.get(c): ws2.append([c, cc[c]])
-    ws2.append(["TOTAL", len(dados)])
+    ws2.append(["TOTAL (rede da busca oficial)", len(rede)])
+    ws2.append(["Por direcionamento interno (D), à parte", len(dirs)])
+    for x in dirs:
+        ws2.append(["   D · " + x["nome"], x["cidade"]])
     ws2.append([])
-    ws2.append(["Cidade", "Prestadores/endereços"])
-    cd = Counter(r["cidade"] for r in dados)
+    ws2.append(["Cidade", "Prestadores"])
+    cd = Counter(r["cidade"] for r in rede)
     for c, n in sorted(cd.items(), key=lambda x: -x[1]): ws2.append([c, n])
-    for col, w in (("A", 34), ("B", 24)): ws2.column_dimensions[col].width = w
+    ws2.append([])
+    ws2.append([NOTA_CONTAGEM])
+    for col, w in (("A", 40), ("B", 24)): ws2.column_dimensions[col].width = w
     for cel in ("A1", "A2", "A3", "A5", "B5"): ws2[cel].font = Font(bold=True)
     fn = os.path.join(D1, "REDE %s.xlsx" % nome.upper().replace("PARANÁ ", "PARANA "))
-    wb.save(fn); print("ok", fn, len(dados))
+    wb.save(fn); print("ok", fn, len(rede), "+%d D" % len(dirs))
 
 json.dump({k: v for k, v in todos.items()}, open("dados/todos.json", "w", encoding="utf-8"), ensure_ascii=False)

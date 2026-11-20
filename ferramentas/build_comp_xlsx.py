@@ -3,8 +3,8 @@ import os, sys, datetime
 from collections import Counter
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _local  # noqa: F401  (fixa o diretorio de trabalho)
-from common import PLANOS, ORDEM_CAT, norm
-from build_comp import concilia
+from common import PLANOS, ORDEM_CAT, norm, NOTA_CONTAGEM, texto_dir
+from build_comp import concilia, totais
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
@@ -22,6 +22,7 @@ BORD = Border(left=thin, right=thin, top=thin, bottom=thin)
 from common import DATA_COLETA as HOJE   # data da coleta, não a de hoje
 
 d = concilia()
+POR, UNIAO = totais(d)          # {curto: (rede oficial, D)} - os mesmos em todo arquivo
 d.sort(key=lambda r: (ORDEM_CAT.index(r["categoria"]) if r["categoria"] in ORDEM_CAT else 99,
                       -len(r["planos"]), r["cidade"] != "Curitiba", r["cidade"], norm(r["nome"])))
 
@@ -63,24 +64,28 @@ ws2.append(["Comparativo de rede credenciada — Paraná Clínicas"])
 ws2.append(["Consulta realizada em", HOJE])
 ws2.append(["Fonte", "Busca oficial de rede credenciada da Paraná Clínicas"])
 ws2.append([])
-ws2.append(["Plano", "Registro ANS", "Prestadores/endereços"])
+ws2.append(["Plano", "Registro ANS", "Prestadores (busca oficial)", "Por direcionamento (D), à parte"])
 for cod, nome, curto, ans in PLANOS:
-    ws2.append([nome, ans, sum(1 for x in d if curto in x["planos"])])
+    ws2.append([nome, ans, POR[curto][0], POR[curto][1]])
 ws2.append([])
-ws2.append(["Abrangência", "Prestadores/endereços"])
-cc = Counter(" + ".join(x["planos"]) for x in d)
+ws2.append(["Abrangência (busca oficial)", "Prestadores"])
+cc = Counter(" + ".join(x["oficial"]) for x in d if x["oficial"])
 for k, v in sorted(cc.items(), key=lambda x: -x[1]):
     ws2.append([k, v])
-ws2.append(["TOTAL (rede consolidada)", len(d)])
+ws2.append(["TOTAL (rede consolidada)", UNIAO])
 ws2.append([])
 ws2.append(["Categoria"] + CURTOS)
 for cat in ORDEM_CAT:
-    ws2.append([cat] + [sum(1 for x in d if x["categoria"] == cat and c in x["planos"]) for c in CURTOS])
+    ws2.append([cat] + [sum(1 for x in d if x["categoria"] == cat and c in x["oficial"]) for c in CURTOS])
+ws2.append(["TOTAL (busca oficial)"] + [POR[c][0] for c in CURTOS])
+ws2.append(["Por direcionamento (D), à parte"] + [POR[c][1] for c in CURTOS])
 ws2.append([])
 ws2.append(["Cidade"] + CURTOS)
-for cid in sorted(set(x["cidade"] for x in d),
-                  key=lambda c: -sum(1 for x in d if x["cidade"] == c)):
-    ws2.append([cid] + [sum(1 for x in d if x["cidade"] == cid and c in x["planos"]) for c in CURTOS])
+for cid in sorted(set(x["cidade"] for x in d if x["oficial"]),
+                  key=lambda c: -sum(1 for x in d if x["cidade"] == c and x["oficial"])):
+    ws2.append([cid] + [sum(1 for x in d if x["cidade"] == cid and c in x["oficial"]) for c in CURTOS])
+ws2.append([])
+ws2.append([NOTA_CONTAGEM])
 for col, w in (("A", 46), ("B", 18), ("C", 22), ("D", 12)):
     ws2.column_dimensions[col].width = w
 ws2["A1"].font = Font(bold=True, size=13, color=NAVY)
@@ -100,13 +105,15 @@ L.append("**Consulta realizada em %s** na busca oficial de rede credenciada da o
 L.append("Operadora: Paraná Clínicas (grupo SulAmérica). Abrangência dos três planos: **Paraná — "
          "Curitiba e Região Metropolitana**.\n")
 L.append("## Planos analisados\n")
-L.append("| Plano | Registro ANS | Contratação | Prestadores/endereços |")
-L.append("|---|---|---|---|")
+L.append("| Plano | Registro ANS | Contratação | Prestadores | Por direcionamento (D) |")
+L.append("|---|---|---|---|---|")
 for cod, nome, curto, ans in PLANOS:
-    L.append("| %s | %s | Coletivo empresarial | %d |" % (nome, ans, sum(1 for x in d if curto in x["planos"])))
-L.append("\n**Rede consolidada (união dos três): %d prestadores/endereços.**\n" % len(d))
-L.append("## Abrangência cruzada\n")
-L.append("| Atende | Prestadores/endereços |")
+    L.append("| %s | %s | Coletivo empresarial | %d | %s |" % (
+        nome, ans, POR[curto][0], texto_dir(POR[curto][1]) or "—"))
+L.append("\n**Rede consolidada (união dos três): %d prestadores.**\n" % UNIAO)
+L.append("_%s_\n" % NOTA_CONTAGEM)
+L.append("## Abrangência cruzada (busca oficial)\n")
+L.append("| Atende | Prestadores |")
 L.append("|---|---|")
 for k, v in sorted(cc.items(), key=lambda x: -x[1]):
     L.append("| %s | %d |" % (k, v))
@@ -115,17 +122,23 @@ L.append("| Categoria | " + " | ".join(CURTOS) + " |")
 L.append("|---|" + "---|" * len(CURTOS))
 for cat in ORDEM_CAT:
     L.append("| %s | %s |" % (cat, " | ".join(
-        str(sum(1 for x in d if x["categoria"] == cat and c in x["planos"])) for c in CURTOS)))
+        str(sum(1 for x in d if x["categoria"] == cat and c in x["oficial"])) for c in CURTOS)))
+L.append("| **Total (busca oficial)** | %s |" % " | ".join("**%d**" % POR[c][0] for c in CURTOS))
+L.append("| Por direcionamento (D), à parte | %s |" % " | ".join(
+    texto_dir(POR[c][1]) or "—" for c in CURTOS))
 L.append("\n## Por cidade\n")
 L.append("| Cidade | " + " | ".join(CURTOS) + " |")
 L.append("|---|" + "---|" * len(CURTOS))
-for cid in sorted(set(x["cidade"] for x in d), key=lambda c: -sum(1 for x in d if x["cidade"] == c)):
+for cid in sorted(set(x["cidade"] for x in d if x["oficial"]),
+                  key=lambda c: -sum(1 for x in d if x["cidade"] == c and x["oficial"])):
     L.append("| %s | %s |" % (cid, " | ".join(
-        str(sum(1 for x in d if x["cidade"] == cid and c in x["planos"])) for c in CURTOS)))
+        str(sum(1 for x in d if x["cidade"] == cid and c in x["oficial"])) for c in CURTOS)))
 L.append("\n## Observações\n")
 L.append("- **D** na coluna do plano significa **direcionamento interno**: o hospital atende, mas por "
          "encaminhamento da operadora, não por acesso livre. Hoje vale para **Erastinho**, "
-         "**Erasto Gaertner** e **Pequeno Príncipe** no 400 e no CIM, e para o **Novaclínica** no CIM.")
+         "**Erasto Gaertner** e **Pequeno Príncipe** no 400 e no CIM, e para o **Novaclínica** no CIM. "
+         "Não vem da busca oficial (é informação do corretor), por isso fica **fora do total** do "
+         "plano e aparece à parte.")
 L.append("- A categoria vem do campo **tipo de estabelecimento** da operadora, não do tipo de prestador. "
          "É o que separa **hospital geral** (onde a internação acontece) de especializado, e é o que tira "
          "os **centros de diagnóstico por imagem** de dentro de \"clínica\" — quem procura ressonância "
