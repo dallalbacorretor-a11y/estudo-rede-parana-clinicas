@@ -45,7 +45,7 @@ TINT = {"400 QP": colors.HexColor("#fdf2f5"), "600 QC": colors.HexColor("#f5f1fa
 # carrega sozinha a identidade).
 CAPA = {"400 QP": colors.HexColor("#e06a80"), "600 QC": colors.HexColor("#a98ad6"),
         "CIM QC": colors.HexColor("#d9a84e")}
-HOJE = datetime.date.today().strftime("%d/%m/%Y")
+from common import DATA_COLETA as HOJE   # data da coleta, não a de hoje
 
 # ---------------------------------------------------------------- tipografia
 def S(name, **k):

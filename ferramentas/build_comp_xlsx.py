@@ -19,7 +19,7 @@ TINT = {"400 QP": "FDF2F5", "600 QC": "F5F1FA", "CIM QC": "FDF6EC"}
 NAVY = "8E0E28"   # vermelho da operadora, no lugar do navy herdado
 thin = Side(style="thin", color="D9D9D9")
 BORD = Border(left=thin, right=thin, top=thin, bottom=thin)
-HOJE = datetime.date.today().strftime("%d/%m/%Y")
+from common import DATA_COLETA as HOJE   # data da coleta, não a de hoje
 
 d = concilia()
 d.sort(key=lambda r: (ORDEM_CAT.index(r["categoria"]) if r["categoria"] in ORDEM_CAT else 99,

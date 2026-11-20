@@ -7,7 +7,7 @@ from common import (norm, cidade_bonita, planos_direcionados, LUGAR,
                     CATEGORIAS, CATS_EXAME, CIM_UNIDADE, PADRAO)
 from privacidade import documento_publico, email_publico
 
-HOJE = "12/09/2026"
+from common import DATA_COLETA as HOJE   # data da coleta da rede
 
 PRODUTOS = [
     {"codigo": "p400", "rotulo": "Paraná 400", "acomodacao": "QP · apartamento",

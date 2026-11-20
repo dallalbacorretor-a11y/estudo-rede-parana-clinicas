@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _local  # noqa: F401  (fixa o diretorio de trabalho)
 
 SAI = os.path.join(_local.RAIZ, "index.html")
-HOJE = "12/09/2026"          # data da coleta da rede
+from common import DATA_COLETA as HOJE   # data da coleta da rede
 import datetime
 VERSAO = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
 

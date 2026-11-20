@@ -14,7 +14,7 @@ def build():
     dados = concilia()
     dados.sort(key=lambda r: (ORDEM_CAT.index(r["categoria"]) if r["categoria"] in ORDEM_CAT else 99,
                               -len(r["planos"]), r["cidade"] != "Curitiba", r["cidade"], norm(r["nome"])))
-    hoje = datetime.date.today().strftime("%d/%m/%Y")
+    from common import DATA_COLETA as hoje   # data da coleta, não a de hoje
     linhas = []
     for r in dados:
         dirs = r.get("dir") or []

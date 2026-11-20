@@ -1,6 +1,6 @@
 # Rede credenciada — Paraná Clínicas
 
-**Consulta realizada em 15/09/2026** na busca oficial de rede credenciada da operadora (https://www.paranaclinicas.com.br/beneficiario/rede-credenciada/).
+**Consulta realizada em 12/09/2026** na busca oficial de rede credenciada da operadora (https://www.paranaclinicas.com.br/beneficiario/rede-credenciada/).
 
 Operadora: Paraná Clínicas (grupo SulAmérica). Abrangência dos três planos: **Paraná — Curitiba e Região Metropolitana**.
 
@@ -49,18 +49,18 @@ Operadora: Paraná Clínicas (grupo SulAmérica). Abrangência dos três planos:
 | Araucária | 24 | 24 | 19 |
 | Campo Largo | 16 | 16 | 3 |
 | Pinhais | 7 | 9 | 1 |
-| Colombo | 5 | 6 | 1 |
 | Piraquara | 3 | 5 | 1 |
+| Colombo | 5 | 6 | 1 |
 | Fazenda Rio Grande | 4 | 4 | 0 |
 | Campina Grande do Sul | 2 | 3 | 1 |
 | Rio Branco do Sul | 3 | 3 | 1 |
+| Tijucas do Sul | 2 | 2 | 0 |
 | Almirante Tamandaré | 2 | 2 | 0 |
 | Quatro Barras | 2 | 2 | 0 |
-| Tijucas do Sul | 2 | 2 | 0 |
 | Mandirituba | 1 | 1 | 0 |
 | Lapa | 1 | 1 | 0 |
-| Itaperuçu | 1 | 1 | 1 |
 | Bocaiúva do Sul | 1 | 1 | 0 |
+| Itaperuçu | 1 | 1 | 1 |
 
 ## Observações
 
