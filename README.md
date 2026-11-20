@@ -17,14 +17,21 @@ exportação em CSV e **geração de PDF** assinado pelo corretor.
 
 ## Planos analisados
 
-| Plano | Registro ANS | Contratação | Prestadores/endereços | Cidades |
-|---|---|---|---|---|
-| Paraná 400 AHO QP COPART SR | 507887263 | Coletivo empresarial | 463 | 17 |
-| Paraná 600 AHO QC COPART SR | 507885267 | Coletivo empresarial | 559 | 17 |
-| Paraná CIM AHO QC COPART SR | 507888261 | Coletivo empresarial | 232 | 10 |
+| Plano | Registro ANS | Contratação | Prestadores | Por direcionamento (D) | Cidades |
+|---|---|---|---|---|---|
+| Paraná 400 AHO QP COPART SR | 507887263 | Coletivo empresarial | 459 | +3 por direcionamento | 17 |
+| Paraná 600 AHO QC COPART SR | 507885267 | Coletivo empresarial | 552 | — | 17 |
+| Paraná CIM AHO QC COPART SR | 507888261 | Coletivo empresarial | 230 | +4 por direcionamento | 10 |
 
-Rede consolidada (união dos três): **558 prestadores/endereços** — 36 hospitais,
-204 nas unidades próprias CIM, 237 clínicas e consultórios, 81 laboratórios e imagem.
+Rede consolidada (união dos três): **555 prestadores** — 16 hospitais gerais,
+23 hospitais especializados, 22 centros de imagem, 105 laboratórios e exames,
+203 nos CIM (6 unidades próprias e 197 médicos) e 186 clínicas e consultórios.
+
+Contagem por endereço de atendimento: cada prestador conta uma vez em cada endereço
+(um laboratório com 3 unidades conta 3). Os hospitais marcados com **D** (direcionamento
+interno, informação do corretor, não da busca oficial) aparecem na lista, mas ficam fora
+do total do plano e são contados à parte: Erasto Gaertner, Erastinho e Pequeno Príncipe
+no 400 e no CIM, e Novaclínica no CIM.
 
 `QC` = quarto coletivo (enfermaria) · `QP` = quarto privativo (apartamento).
 As variantes de acomodação do mesmo produto compartilham a mesma rede, por isso os planos
@@ -32,9 +39,11 @@ Paraná 400 AHO QC (ANS 507886265) e Paraná 600 AHO QP (ANS 507889260) não for
 
 ## Destaques
 
-- O **Paraná 600** é o de rede mais ampla: tem 97 prestadores exclusivos, entre eles
-  Nossa Senhora das Graças, Vita Batel, Vita Curitiba, Instituto da Criança, IPO,
-  Nossa Senhora do Pilar e Porto Seguro Psiquiátrico.
+- O **Paraná 600** é o de rede mais ampla: tem 96 prestadores que só ele tem na busca
+  oficial, entre eles Nossa Senhora das Graças, Vita Batel, Vita Curitiba, Instituto da
+  Criança, IPO, Nossa Senhora do Pilar e Porto Seguro Psiquiátrico (Erasto Gaertner,
+  Erastinho e Pequeno Príncipe também estão nessa conta: o 400 e o CIM chegam a eles
+  só por direcionamento).
 - **228 prestadores estão nos três planos** — é o piso comum da rede.
 - O **Paraná CIM** é o mais restrito: 10 cidades contra 17, e quase toda a sua rede é compartilhada.
 - As unidades próprias **CIM** (Centros Integrados de Medicina — Água Verde, CIC,
@@ -55,7 +64,7 @@ index.html                                    a página de consulta publicada ac
 02 - COMPARATIVOS DE REDE/
     COMPARATIVO ... - CLIENTES (Principais).pdf   estabelecimentos (hospitais, CIM, clínicas, labs)
     COMPARATIVO ... - Apresentacao.pdf            rede completa
-    COMPARATIVO ... .xlsx                          558 linhas, uma coluna por plano
+    COMPARATIVO ... .xlsx                          555 linhas, uma coluna por plano
     COMPARATIVO ... .html                          versão interativa, com busca e filtros
 
 03 - MATERIAIS ORIGINAIS (PDFs das operadoras)/
@@ -63,8 +72,11 @@ index.html                                    a página de consulta publicada ac
      apenas o buscador online)
 ```
 
-Nos comparativos, ✔ indica que o prestador consta na rede daquele plano, com uma cor por plano:
-<span>400 QP</span> vermelho · <span>600 QC</span> verde · <span>CIM QC</span> azul.
+Nos comparativos, ✔ indica que o prestador consta na rede daquele plano e **D**, que o
+acesso é por direcionamento interno, com uma cor por plano — a mesma na página, nas
+planilhas, no comparativo HTML e nos PDFs:
+<span>400 QP</span> vermelho (`#a80a32`) · <span>600 QC</span> roxo (`#6b3f8f`) ·
+<span>CIM QC</span> âmbar (`#b5761b`).
 
 ## Contato
 

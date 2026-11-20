@@ -8,7 +8,8 @@ from build_comp import concilia, totais
 BASE = _local.RAIZ
 D2 = os.path.join(BASE, "02 - COMPARATIVOS DE REDE")
 CURTOS = [p[2] for p in PLANOS]
-CORES = {"400 QP": "#a80a32", "600 QC": "#1f6b4e", "CIM QC": "#2a2abf"}
+# mesma paleta da pagina, das planilhas e dos PDFs
+CORES = {"400 QP": "#a80a32", "600 QC": "#6b3f8f", "CIM QC": "#b5761b"}
 
 def build():
     dados = concilia()
