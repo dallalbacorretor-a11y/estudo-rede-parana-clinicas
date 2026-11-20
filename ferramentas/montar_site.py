@@ -141,6 +141,11 @@ app = troca(app, "PR: { lat: [-26.72, -22.51], lng: [-54.62, -48.02] },",
             (min(lats) - m, max(lats) + m, min(lngs) - m, max(lngs) + m))
 
 app = troca(app, '"rede-amil-pr-"', '"rede-parana-clinicas-"')
+# Todas as paginas do GitHub Pages do Alan dividem a mesma origem
+# (dallalbacorretor-a11y.github.io): uma chave generica no localStorage seria a
+# mesma do site da Amil e dos outros estudos. Prefixo proprio deste estudo.
+app = troca(app, 'var CHAVE_CORRETOR = "mazza.corretor.v1";',
+            'var CHAVE_CORRETOR = "mzb_paranaclin_corretor";')
 app = troca(app, '"Rede que a Amil devolve para "',
             '"Rede da Paraná Clínicas em "')
 app = troca(app,

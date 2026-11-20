@@ -627,6 +627,6 @@ function filtra(){const t=q.value.toLowerCase().trim(),c=fc.value,d=fd.value;let
   r.hidden=!ok; if(ok)n++;}
  cnt.textContent=n+' registro'+(n===1?'':'s');}
 [q,fc,fd].forEach(e=>e.addEventListener('input',filtra));
-try{const s=localStorage.getItem('pc_filtros');if(s){const o=JSON.parse(s);q.value=o.q||'';fc.value=o.c||'';fd.value=o.d||'';filtra();}}catch(e){}
-[q,fc,fd].forEach(e=>e.addEventListener('input',()=>{try{localStorage.setItem('pc_filtros',JSON.stringify({q:q.value,c:fc.value,d:fd.value}))}catch(e){}}));
+try{const s=localStorage.getItem('mzb_paranaclin_filtros');if(s){const o=JSON.parse(s);q.value=o.q||'';fc.value=o.c||'';fd.value=o.d||'';filtra();}}catch(e){}
+[q,fc,fd].forEach(e=>e.addEventListener('input',()=>{try{localStorage.setItem('mzb_paranaclin_filtros',JSON.stringify({q:q.value,c:fc.value,d:fd.value}))}catch(e){}}));
 </script></body></html>
