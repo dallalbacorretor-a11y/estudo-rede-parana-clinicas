@@ -227,8 +227,8 @@
 
     return {
       arquivo: nomeArquivo(["Rede Parana Clinicas", juntar(nomes), onde]),
-      rodape: "Rede credenciada Paraná Clínicas   ·   " + nomes.join(", ") + "   ·   " + onde +
-              "   ·   coleta " + D.gerado_em,
+      rodape: "Rede credenciada Paraná Clínicas   ·   " +
+              juntar(produtos.map(curtoProduto)) + "   ·   " + onde + "   ·   coleta " + D.gerado_em,
       corretora: (corretor || {}).corretora || "Mazza Broker",
       corretorNome: (corretor || {}).nome || "",
       capa: { titulo: "Rede credenciada", destaque: "Paraná Clínicas", onde: onde,
@@ -297,7 +297,6 @@
     linhas.push({ celulas: ["Cidades com rede", contaCidades(A), contaCidades(B), "", ""] });
 
     var secoes = [
-      leituraPdf([prodA, prodB]),
       { tipo: "texto", titulo: "O que a troca significa", conta: onde, texto: [
         ["O ", false], [nA, true], [" atende " + A.length.toLocaleString("pt-BR") +
         " prestadores na busca oficial" + (dA ? " (+" + dA + " por direcionamento)" : "") +
@@ -315,8 +314,8 @@
         linhas: linhas,
         nota: [["Saem", true], [": estão no " + nA + " e não aparecem no " + nB +
                 ", nem por direcionamento. ", false], ["Entram", true],
-               [": o contrário. Contagem por endereço de atendimento; o direcionamento " +
-                "interno (D) fica fora dos totais.", false]] }
+               [": o contrário. O direcionamento interno (D) fica fora dos totais.", false]] },
+      leituraPdf([prodA, prodB])
     ];
     if (r.cidadesSomem.length) {
       secoes.push({ tipo: "texto", titulo: "Cidades que ficam sem rede",
@@ -340,12 +339,13 @@
 
     return {
       arquivo: nomeArquivo(["Rede Parana Clinicas", "troca de " + nA + " para " + nB, onde]),
-      rodape: "Paraná Clínicas   ·   " + nA + " para " + nB + "   ·   " + onde +
-              "   ·   coleta " + D.gerado_em,
+      rodape: "Paraná Clínicas   ·   " + curtoProduto(prodA) + " para " + curtoProduto(prodB) +
+              "   ·   " + onde + "   ·   coleta " + D.gerado_em,
       corretora: (corretor || {}).corretora || "Mazza Broker",
       corretorNome: (corretor || {}).nome || "",
-      capa: { titulo: "O que muda", destaque: nA + " para " + nB, onde: onde,
-              recorte: "Paraná Clínicas  ·  busca oficial de " + D.gerado_em,
+      capa: { titulo: "O que muda", destaque: prodA.rotulo + " para " + prodB.rotulo, onde: onde,
+              recorte: "de " + nA + " para " + nB + "  ·  busca oficial da Paraná Clínicas de " +
+                       D.gerado_em,
               placar: [[pct + "%", "da rede mantida"],
                        [r.perde.length, "prestadores saem"],
                        [hospSaem.length, "hospitais saem"],
