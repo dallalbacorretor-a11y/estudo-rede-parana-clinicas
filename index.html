@@ -1231,7 +1231,7 @@ tr.mais span{color:var(--tinta-fraca);font-size:12px;margin-right:12px}
     Esta página é o retrato da data indicada no topo —
     <strong>confirme no portal da Paraná Clínicas antes de contratar.</strong></span>
   <span class="assina" id="assinaRodape"></span>
-  <span class="versao" title="Se esta data estiver atrasada, recarregue a página segurando Shift">versão 23/11/2026 09:54</span>
+  <span class="versao" title="Se esta data estiver atrasada, recarregue a página segurando Shift">versão 23/11/2026 15:18</span>
 </div>
 
 
@@ -2457,7 +2457,8 @@ window.CORRETOR={"nome": "Alan Vinicius Dall Alba", "corretora": "Mazza Broker",
     var hospPerde = r.perde.filter(function (p) {
       return /^Hospitais/.test(tipoDe(p) || "");
     });
-    var praças = escolhidos("cid");
+    // filtrou por onde o prestador fica (cidr)? e esse o recorte, como no apelidoCidade()
+    var praças = temEscolha("cidr") ? escolhidos("cidr") : escolhidos("cid");
     var onde = praças.length ? praças.map(bonito).join(", ")
                              : (D.estado || D.uf);
 
@@ -2816,7 +2817,8 @@ window.CORRETOR={"nome": "Alan Vinicius Dall Alba", "corretora": "Mazza Broker",
     var prodA = D.produtos.filter(function (p) { return p.codigo === codA; })[0];
     var prodB = D.produtos.filter(function (p) { return p.codigo === codB; })[0];
     var nA = nomeProduto(codA), nB = nomeProduto(codB);
-    var praças = escolhidos("cid");
+    // filtrou por onde o prestador fica (cidr)? e esse o recorte, como no apelidoCidade()
+    var praças = temEscolha("cidr") ? escolhidos("cidr") : escolhidos("cid");
     var onde = (praças.length ? praças.map(bonito).join(", ") : (D.estado || D.uf)) +
                " / " + (D.uf || "PR");
     function oficial(p, cod) {

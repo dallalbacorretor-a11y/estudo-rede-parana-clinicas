@@ -259,7 +259,8 @@
     var prodA = D.produtos.filter(function (p) { return p.codigo === codA; })[0];
     var prodB = D.produtos.filter(function (p) { return p.codigo === codB; })[0];
     var nA = nomeProduto(codA), nB = nomeProduto(codB);
-    var praças = escolhidos("cid");
+    // filtrou por onde o prestador fica (cidr)? e esse o recorte, como no apelidoCidade()
+    var praças = temEscolha("cidr") ? escolhidos("cidr") : escolhidos("cid");
     var onde = (praças.length ? praças.map(bonito).join(", ") : (D.estado || D.uf)) +
                " / " + (D.uf || "PR");
     function oficial(p, cod) {
