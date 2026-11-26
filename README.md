@@ -1,8 +1,9 @@
 # Estudo de Rede Credenciada — Paraná Clínicas
 
 Levantamento da rede credenciada da **Paraná Clínicas** para os três planos comercializados,
-consultado em **12/09/2026** na busca oficial de rede credenciada da operadora
-(<https://www.paranaclinicas.com.br/beneficiario/rede-credenciada/>).
+consultado em **26/11/2026** na busca oficial de rede credenciada da operadora
+(<https://www.paranaclinicas.com.br/beneficiario/rede-credenciada/>). A consulta anterior era
+de 12/09/2026.
 
 ### 👉 [Consultar a rede](https://dallalbacorretor-a11y.github.io/estudo-rede-parana-clinicas/)
 
@@ -19,13 +20,12 @@ exportação em CSV e **geração de PDF** assinado pelo corretor.
 
 | Plano | Registro ANS | Contratação | Prestadores | Por direcionamento (D) | Cidades |
 |---|---|---|---|---|---|
-| Paraná 400 AHO QP COPART SR | 507887263 | Coletivo empresarial | 459 | +3 por direcionamento | 17 |
-| Paraná 600 AHO QC COPART SR | 507885267 | Coletivo empresarial | 552 | — | 17 |
-| Paraná CIM AHO QC COPART SR | 507888261 | Coletivo empresarial | 230 | +4 por direcionamento | 10 |
+| Paraná 400 AHO QP COPART SR | 507887263 | Coletivo empresarial | 463 | +3 por direcionamento | 17 |
+| Paraná 600 AHO QC COPART SR | 507885267 | Coletivo empresarial | 555 | — | 17 |
+| Paraná CIM AHO QC COPART SR | 507888261 | Coletivo empresarial | 235 | +4 por direcionamento | 10 |
 
-Rede consolidada (união dos três): **555 prestadores** — 16 hospitais gerais,
-23 hospitais especializados, 22 centros de imagem, 105 laboratórios e exames,
-203 nos CIM (6 unidades próprias e 197 médicos) e 186 clínicas e consultórios.
+Rede consolidada (união dos três): **562 prestadores**. A divisão por categoria e por
+cidade de cada plano está no [RESUMO](01%20-%20REDE%20CREDENCIADA/Paran%C3%A1%20Cl%C3%ADnicas/RESUMO.md).
 
 Contagem por endereço de atendimento: cada prestador conta uma vez em cada endereço
 (um laboratório com 3 unidades conta 3). Os hospitais marcados com **D** (direcionamento
@@ -39,12 +39,12 @@ Paraná 400 AHO QC (ANS 507886265) e Paraná 600 AHO QP (ANS 507889260) não for
 
 ## Destaques
 
-- O **Paraná 600** é o de rede mais ampla: tem 96 prestadores que só ele tem na busca
+- O **Paraná 600** é o de rede mais ampla: tem 97 prestadores que só ele tem na busca
   oficial, entre eles Nossa Senhora das Graças, Vita Batel, Vita Curitiba, Instituto da
   Criança, IPO, Nossa Senhora do Pilar e Porto Seguro Psiquiátrico (Erasto Gaertner,
   Erastinho e Pequeno Príncipe também estão nessa conta: o 400 e o CIM chegam a eles
   só por direcionamento).
-- **228 prestadores estão nos três planos** — é o piso comum da rede.
+- **229 prestadores estão nos três planos** — é o piso comum da rede.
 - O **Paraná CIM** é o mais restrito: 10 cidades contra 17, e quase toda a sua rede é compartilhada.
 - As unidades próprias **CIM** (Centros Integrados de Medicina — Água Verde, CIC,
   São José dos Pinhais e Araucária) aparecem como tipo de prestador separado, com os

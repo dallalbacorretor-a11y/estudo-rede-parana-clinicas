@@ -18,12 +18,10 @@ PLANOS = [("236", "Paraná 400 AHO QP COPART SR", "400 QP", "507887263"),
 # Data da coleta da rede - a ÚNICA data impressa em página, planilhas,
 # comparativo, PDFs e RESUMO. Não é a data em que os scripts rodam: refazer um
 # PDF hoje não faz a rede ter sido consultada hoje. A lista de rede de cada
-# plano (dados/rede2_*.json) é a da busca de 12/09/2026 - conferido: são os
-# mesmos 463/559/232 registros das planilhas publicadas no primeiro commit,
-# de 12/09. O que veio em 15/09 foram complementos (especialidades completas,
-# corpo clínico, e-mail), não a composição da rede.
+# plano (dados/rede2_*.json) é a da busca de 26/11/2026: rede, especialidades
+# completas e corpo clínico recoletados nesse dia (a anterior era de 12/09/2026).
 # Ao recoletar a rede (harvest2.py), atualizar esta data.
-DATA_COLETA = "12/09/2026"
+DATA_COLETA = "26/11/2026"
 
 # ---------------------------------------------------------------- categorias
 # A operadora classifica em dois campos. `tipo_prestador` (8 classes) é grosso
